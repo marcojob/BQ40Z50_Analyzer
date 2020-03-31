@@ -1,15 +1,12 @@
-# -*- coding: utf-8 -*-
 import usb.core
 import usb.util
+import struct
+import crc8
+import logging
+import chromalog
 
 from array import array
 from time import sleep
-import struct
-
-import crc8
-
-import logging
-import chromalog
 from chromalog.mark.helpers.simple import success, error, important
 
 chromalog.basicConfig(format="%(message)s", level=logging.DEBUG)
@@ -141,8 +138,7 @@ class EV2300:
                 logger.warning('Readed back length != 64', len(self.response))
                 return False
             if self.response[2] == self.ERROR_CODE:
-                # logger.warning('Request error', format('{:02x}', strself.response[2]))
-                print(self.response[2])
+                logger.warning('Request error: {}'.format(self.response[2]))
                 return False
             else:
                 length = self.response[0]
@@ -150,8 +146,6 @@ class EV2300:
                 crc = self._calculate_crc(self.response[2:length-1])
                 if crc != received_crc:
                     logger.warning('Received message CRC mismatch')
-                    print(crc)
-                    print(received_crc)
                     return False
                 return True
         except usb.core.USBError as e:
