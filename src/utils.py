@@ -18,8 +18,6 @@ DEVICENAME_REG = 0x21
 SAFETYALERT_CMD = array('B', b'\x50\x00')
 SAFETYSTATUS_CMD = array('B', b'\x51\x00')
 OPERATIONSTATUS_CMD = array('B', b'\x54\x00')
-
-# Not available in SEALED Mode
 LIFETIMEDATABLOCK1_CMD = array('B', b'\x60\x00')
 LIFETIMEDATABLOCK2_CMD = array('B', b'\x61\x00')
 LIFETIMEDATABLOCK3_CMD = array('B', b'\x62\x00')
