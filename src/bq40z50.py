@@ -33,6 +33,62 @@ class BQ40Z50:
         safety_status_dict = self.get_safety_status()
         print(safety_status_dict)
 
+        battery_status_dict = self.get_battery_status()
+        print(battery_status_dict)
+
+    def get_battery_status(self):
+        battery_status_word = self.read_word(BATTERYSTATUS_REG)
+        battery_status = dict()
+
+        if battery_status_word:
+            # Overcharged alarm
+            battery_status['OCA'] = self.get_bit(battery_status_word, 15)
+
+            # Terminate charge alarm
+            battery_status['TCA'] = self.get_bit(battery_status_word, 14)
+
+            # Overtemperature alarm
+            battery_status['OTA'] = self.get_bit(battery_status_word, 12)
+
+            # Terimnate discharge alarm
+            battery_status['TDA'] = self.get_bit(battery_status_word, 11)
+
+            # Remaining capacity alarm
+            battery_status['RCA'] = self.get_bit(battery_status_word, 9)
+
+            # Remaining time alarm
+            battery_status['RTA'] = self.get_bit(battery_status_word, 8)
+
+            # Gauge initialization completed
+            battery_status['INIT'] = self.get_bit(battery_status_word, 7)
+
+            # If true in DISCHARGE / RELAX MODE, else CHARGE
+            battery_status['DSG'] = self.get_bit(battery_status_word, 6)
+
+            # Fully charged
+            battery_status['FC'] = self.get_bit(battery_status_word, 5)
+
+            # Fully discharged
+            battery_status['FD'] = self.get_bit(battery_status_word, 4)
+
+            status = battery_status_word & 0b111
+
+            if status == 0:
+                battery_status['status'] = 'OK'
+            elif status == 1:
+                battery_status['status'] = 'BUSY'
+            elif status == 2:
+                battery_status['status'] = 'RSVD'
+            elif status == 3:
+                battery_status['status'] = 'unsupported'
+            elif status == 4:
+                battery_status['status'] = 'access denied'
+            elif status == 5:
+                battery_status['status'] = 'overflow/underflow'
+
+        return battery_status
+
+
     def get_safety_status(self):
         safety_status_block = self.read_block_mac(SAFETYSTATUS_CMD)
         safety_status = dict()
@@ -320,7 +376,7 @@ class BQ40Z50:
     def read_word(self, REG: int):
         word = self.ev.smbus_read_word(DEV_ADDR, REG)
         if word:
-            return word.to_bytes(16, byteorder='little')
+            return word
         return None
 
     def bytes_to_str(self, input_b: bytes, l: int) -> str:
