@@ -36,6 +36,104 @@ class BQ40Z50:
         battery_status_dict = self.get_battery_status()
         print(battery_status_dict)
 
+        operation_status = self.get_operation_status()
+        print(operation_status)
+
+    def get_operation_status(self):
+        operation_status_block = self.read_block_mac(OPERATIONSTATUS_CMD)
+        operation_status = dict()
+
+        if operation_status_block:
+            # Emergency FET shutdown
+            operation_status['EMSHUT'] = self.get_bit(operation_status_block[0], 5)
+
+            # Cell balancing status
+            operation_status['CB'] = self.get_bit(operation_status_block[0], 4)
+
+            # CC measurements in SLEEP
+            operation_status['SLPCC'] = self.get_bit(operation_status_block[0], 3)
+
+            # ADC measurements in SLEEP
+            operation_status['SLPAD'] = self.get_bit(operation_status_block[0], 2)
+
+            # Auto CC calibration
+            operation_status['SMBLCAL'] = self.get_bit(operation_status_block[0], 1)
+
+            # Initialization after full reset
+            operation_status['INIT'] = self.get_bit(operation_status_block[0], 0)
+
+            # SLEEP mode triggered via command
+            operation_status['SLEEPM'] = self.get_bit(operation_status_block[1], 7)
+
+            # 400 kHz SMBUS mode
+            operation_status['XL'] = self.get_bit(operation_status_block[1], 6)
+
+            # Calibration Output
+            operation_status['CAL_OFFSET'] = self.get_bit(operation_status_block[1], 5)
+
+            # Calibration Output
+            operation_status['CAL'] = self.get_bit(operation_status_block[1], 4)
+
+            # Auto CC Offset Calibration
+            operation_status['AUTOCALM'] = self.get_bit(operation_status_block[1], 3)
+
+            # Authentication in progress
+            operation_status['AUTH'] = self.get_bit(operation_status_block[1], 2)
+
+            # LED display
+            operation_status['LED'] = self.get_bit(operation_status_block[1], 1)
+
+            # Shutdown triggered via command
+            operation_status['SDM'] = self.get_bit(operation_status_block[1], 0)
+
+            # SLEEP conditions met
+            operation_status['SLEEP'] = self.get_bit(operation_status_block[2], 7)
+
+            # Charging disabled
+            operation_status['XCHG'] = self.get_bit(operation_status_block[2], 6)
+
+            # Discharging disabled
+            operation_status['XDSG'] = self.get_bit(operation_status_block[2], 5)
+
+            # PERMANENT FAILURE mode status
+            operation_status['PF'] = self.get_bit(operation_status_block[2], 4)
+
+            # SAFETY status
+            operation_status['SS'] = self.get_bit(operation_status_block[2], 3)
+
+            # Shutdown triggered via low pack voltage
+            operation_status['SDV'] = self.get_bit(operation_status_block[2], 2)
+
+            sec = (self.get_bit(operation_status_block[2], 1) << 1) | self.get_bit(operation_status_block[2], 0)
+            if sec == 0:
+                operation_status['SEC'] = 'Reserved'
+            elif sec == 1:
+                operation_status['SEC'] = 'Full Access'
+            elif sec == 2:
+                operation_status['SEC'] = 'Unsealed'
+            elif sec == 3:
+                operation_status['SEC'] = 'Sealed'
+
+            # Battery Trip Point Interrupt
+            operation_status['BTP_INT'] = self.get_bit(operation_status_block[3], 7)
+
+            # Fuse status
+            operation_status['FUSE'] = self.get_bit(operation_status_block[3], 5)
+
+            # Precharge FET Status
+            operation_status['PCHG'] = self.get_bit(operation_status_block[3], 3)
+
+            # CHG FET status
+            operation_status['CHG'] = self.get_bit(operation_status_block[3], 2)
+
+            # DSG FET status
+            operation_status['DSG'] = self.get_bit(operation_status_block[3], 1)
+
+            # Syste present low
+            operation_status['PRES'] = self.get_bit(operation_status_block[3], 0)
+
+        return operation_status
+
     def get_battery_status(self):
         battery_status_word = self.read_word(BATTERYSTATUS_REG)
         battery_status = dict()
