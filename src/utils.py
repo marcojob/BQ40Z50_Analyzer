@@ -2,12 +2,26 @@
 
 from array import array
 
-# Device address
-DEV_ADDR = 0x0B
-
-# Manufacturer Access (MAC) Commands
+# Registers
+DEV_ADDR = 0x0B # Device address
 MAC_REG = 0x44 # Register of MAC
 
+# Read word
+BATTERYSTATUS_REG = 0x16
+SOH_REG = 0x4F
+
+# Read block
+DEVICENAME_REG = 0x21
+
+# Manufacturer Access (MAC) Commands
 # Available in SEALED Mode
-CHEMID_CMD = array('B', b'\x06\x00')
+SAFETYALERT_CMD = array('B', b'\x50\x00')
+SAFETYSTATUS_CMD = array('B', b'\x51\x00')
 OPERATIONSTATUS_CMD = array('B', b'\x54\x00')
+
+# Not available in SEALED Mode
+LIFETIMEDATABLOCK1_CMD = array('B', b'\x60\x00')
+LIFETIMEDATABLOCK2_CMD = array('B', b'\x61\x00')
+LIFETIMEDATABLOCK3_CMD = array('B', b'\x62\x00')
+LIFETIMEDATABLOCK4_CMD = array('B', b'\x63\x00')
+LIFETIMEDATABLOCK5_CMD = array('B', b'\x64\x00')

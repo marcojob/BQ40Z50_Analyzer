@@ -12,8 +12,8 @@ from src.utils import *
 
 def main():
     bq = BQ40Z50()
-    block = bq.read_block(OPERATIONSTATUS_CMD)
-    print(bq.bytes_to_str(block))
+
+    bq.get_summary()
 
 if __name__ == "__main__":
     main()
