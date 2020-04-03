@@ -30,6 +30,88 @@ class BQ40Z50:
         lifetime_5_dict = self.get_lifetime_5()
         print(lifetime_5_dict)
 
+        safety_status_dict = self.get_safety_status()
+        print(safety_status_dict)
+
+    def get_safety_status(self):
+        safety_status_block = self.read_block_mac(SAFETYSTATUS_CMD)
+        safety_status = dict()
+
+        if safety_status_block:
+            # Undertemperature during Discharge
+            safety_status['UTD'] = self.get_bit(safety_status_block[0], 3)
+
+            # Undertemperature during Charge
+            safety_status['UTC'] = self.get_bit(safety_status_block[0], 2)
+
+            # Over-Precharge Current
+            safety_status['PCHGC'] = self.get_bit(safety_status_block[0], 1)
+
+            # Overcharging voltage
+            safety_status['CHGV'] = self.get_bit(safety_status_block[0], 0)
+
+            # Overcharging current
+            safety_status['CHGC'] = self.get_bit(safety_status_block[1], 7)
+
+            # Overcharge
+            safety_status['OC'] = self.get_bit(safety_status_block[1], 6)
+
+            # Charge Timeout
+            safety_status['CTO'] = self.get_bit(safety_status_block[1], 4)
+
+            # Precharge Timeout
+            safety_status['PTO'] = self.get_bit(safety_status_block[1], 2)
+
+            # Overtemperature FET
+            safety_status['OTF'] = self.get_bit(safety_status_block[1], 0)
+
+            # Cell Undervoltage Compensated
+            safety_status['CUVC'] = self.get_bit(safety_status_block[2], 6)
+
+            # Overtemperature during discharge
+            safety_status['OTD'] = self.get_bit(safety_status_block[2], 5)
+
+            # Overtemperature during charge
+            safety_status['OTC'] = self.get_bit(safety_status_block[2], 4)
+
+            # Short-circuit during discharge latch
+            safety_status['ASCDL'] = self.get_bit(safety_status_block[2], 3)
+
+            # Short-circuit during discharge
+            safety_status['ASCD'] = self.get_bit(safety_status_block[2], 2)
+
+            # Short-circuit during during charge latch
+            safety_status['ASCCL'] = self.get_bit(safety_status_block[2], 1)
+
+            # Short-circuit during charge
+            safety_status['ASCC'] = self.get_bit(safety_status_block[2], 0)
+
+            # Overload during discharge latch
+            safety_status['AOLDL'] = self.get_bit(safety_status_block[3], 7)
+
+            # Overload during discharge
+            safety_status['AOLD'] = self.get_bit(safety_status_block[3], 6)
+
+            # Overcurrent during discharge 2
+            safety_status['OCD2'] = self.get_bit(safety_status_block[3], 5)
+
+            # Overcurrent during discharge 1
+            safety_status['OCD1'] = self.get_bit(safety_status_block[3], 4)
+
+            # Overcurrent during charge 2
+            safety_status['OCC2'] = self.get_bit(safety_status_block[3], 3)
+
+            # Overcurrent during charge 1
+            safety_status['OCC1'] = self.get_bit(safety_status_block[3], 2)
+
+            # Cell overvoltage
+            safety_status['COV'] = self.get_bit(safety_status_block[3], 1)
+
+            # Cell undervoltage
+            safety_status['CUV'] = self.get_bit(safety_status_block[3], 0)
+
+        return safety_status
+
     def get_lifetime_5(self):
         lifetime_block = self.read_block_mac(LIFETIMEDATABLOCK5_CMD)
         lifetime = dict()
@@ -241,9 +323,11 @@ class BQ40Z50:
             return word.to_bytes(16, byteorder='little')
         return None
 
-    def bytes_to_str(self, input_b: bytes, l) -> str:
+    def bytes_to_str(self, input_b: bytes, l: int) -> str:
         output_str = ''
         for i in range(l):
             output_str += '{:08b}'.format(input_b[i])
         return output_str
 
+    def get_bit(self, input_b: bytes, index: int) -> int:
+        return (input_b >> index) & 1
