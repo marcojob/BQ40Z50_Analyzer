@@ -13,7 +13,7 @@ from src.utils import *
 def main():
     bq = BQ40Z50()
 
-    bq.get_summary()
+    bq.create_summary()
 
 if __name__ == "__main__":
     main()

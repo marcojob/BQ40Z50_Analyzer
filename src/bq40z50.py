@@ -1,4 +1,5 @@
 import logging
+import csv
 
 from .utils import *
 from . import ev2300
@@ -10,35 +11,91 @@ class BQ40Z50:
     def __init__(self):
         self.ev = ev2300.EV2300()
         self.ev.prepare()
+        self.battery_dict = dict()
+        self.battery_dict_ready = False
         self.logger = logging.getLogger()
 
+    def create_summary(self):
+        # Get existing data from battery_data.csv
+        self.prepare_csv()
+
+        # Get summary into battery_dict
+        self.get_summary()
+
+        # Write battery_dict into file
+        self.write_summary()
+
+    def write_summary(self):
+        f = open(DATA_FILE, "a")
+
+        # Go through all fields
+        for key in self.battery_dict.keys():
+            # If the csv is empty we need to write keys first
+            if not self.battery_dict_ready:
+                f.write(key + ", ")
+
+        # Newline after header
+        f.write("\n")
+
+        # Write data
+        for key in self.battery_dict.keys():
+            f.write(str(self.battery_dict[key]) + ", ")
+
+        # Newline after data
+        f.write("\n")
+
+
+    def prepare_csv(self):
+        f = open(DATA_FILE, "r")
+        file_content = f.readlines()
+        f.close()
+
+        if not len(file_content) == 0:
+            self.battery_dict_ready = True
+
     def get_summary(self):
-        serial_number = self.get_serial_number()
-        print(f"serial_number: {serial_number}")
+        # Add serial number
+        serial_number_dict = self.get_serial_number()
+        self.add_to_battery_dict(serial_number_dict, "Serial Number")
 
+        # Add lifetime 1 dict
         lifetime_1_dict = self.get_lifetime_1()
-        print(lifetime_1_dict)
+        self.add_to_battery_dict(lifetime_1_dict, "Lifetime 1")
 
+        # Add lifetime 2 dict
         lifetime_2_dict = self.get_lifetime_2()
-        print(lifetime_2_dict)
+        self.add_to_battery_dict(lifetime_2_dict, "Lifetime 2")
 
+        # Add lifetime 3 dict
         lifetime_3_dict = self.get_lifetime_3()
-        print(lifetime_3_dict)
+        self.add_to_battery_dict(lifetime_3_dict, "Lifetime 3")
 
+        # Add lifetime 4 dict
         lifetime_4_dict = self.get_lifetime_4()
-        print(lifetime_4_dict)
+        self.add_to_battery_dict(lifetime_4_dict, "Lifetime 4")
 
+        # Add lifetime 5 dict
         lifetime_5_dict = self.get_lifetime_5()
-        print(lifetime_5_dict)
+        self.add_to_battery_dict(lifetime_5_dict, "Lifetime 5")
 
+        # Add safety status
         safety_status_dict = self.get_safety_status()
-        print(safety_status_dict)
+        self.add_to_battery_dict(safety_status_dict, "Safety Status")
 
+        # Add battery status
         battery_status_dict = self.get_battery_status()
-        print(battery_status_dict)
+        self.add_to_battery_dict(battery_status_dict, "Battery Status")
 
-        operation_status = self.get_operation_status()
-        print(operation_status)
+        # Add operation status
+        operation_status_dict = self.get_operation_status()
+        self.add_to_battery_dict(operation_status_dict, "Operation Status")
+
+    def add_to_battery_dict(self, result_dict: dict, topic_name: str):
+        for key in result_dict.keys():
+            field_name = topic_name + ": " + key
+
+            # Add data
+            self.battery_dict[topic_name + ": " + key] = result_dict[key]
 
     def read_block_mac(self, CMD: array) -> array:
         self.ev.smbus_write_block(DEV_ADDR, MAC_REG, CMD)
@@ -520,7 +577,10 @@ class BQ40Z50:
 
     def get_serial_number(self) -> str:
         serial_number_block = self.read_block(DEVICENAME_REG)
+        serial_number = dict()
+
         if serial_number_block:
-            serial_number = serial_number_block.tobytes().decode('utf-8').split(';')[0]
-            return serial_number
-        return None
+            serial_number["Serial Number 1"] = serial_number_block.tobytes().decode('utf-8').split(';')[0]
+            serial_number["Serial Number 2"] = serial_number_block.tobytes().decode('utf-8').split(';')[1]
+
+        return serial_number

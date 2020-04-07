@@ -2,6 +2,9 @@
 
 from array import array
 
+# General definitions
+DATA_FILE = "battery_data.csv"
+
 # Registers
 DEV_ADDR = 0x0B # Device address
 MAC_REG = 0x44 # Register of MAC
