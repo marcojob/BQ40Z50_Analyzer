@@ -4,6 +4,7 @@ from .utils import *
 from . import ev2300
 
 from array import array
+from time import sleep
 
 class BQ40Z50:
     def __init__(self):
@@ -38,6 +39,78 @@ class BQ40Z50:
 
         operation_status = self.get_operation_status()
         print(operation_status)
+
+    def read_block_mac(self, CMD: array) -> array:
+        self.ev.smbus_write_block(DEV_ADDR, MAC_REG, CMD)
+        block = self.ev.smbus_read_block(DEV_ADDR, MAC_REG)
+
+        # First two block words need to be the command
+        if len(CMD) > 1 and not block[0] == CMD[0] and not block[1] == CMD[1]:
+            self.logger.warning("Read block CMD not correct")
+            return None
+        else:
+            # Remove the cmd from the output block
+            block.pop(0)
+            block.pop(0)
+
+        # Return as array object
+        return block
+
+    def read_block(self, CODE: array) -> array:
+        return self.ev.smbus_read_block(DEV_ADDR, CODE)
+
+    def read_word(self, REG: int):
+        word = self.ev.smbus_read_word(DEV_ADDR, REG)
+        if word:
+            return word
+        return None
+
+    def bytes_to_str(self, input_b: bytes, l: int) -> str:
+        output_str = ''
+        for i in range(l):
+            output_str += '{:08b}'.format(input_b[i])
+        return output_str
+
+    def get_bit(self, input_b: bytes, index: int) -> int:
+        return (input_b >> index) & 1
+
+    def try_unseal(self):
+        self.unseal(0x79E6, 0x428A)
+        sleep(0.1)
+        print(self.is_sealed())
+        sleep(0.1)
+
+        self.unseal(0x428A, 0x79E6)
+        sleep(0.1)
+        print(self.is_sealed())
+        sleep(0.1)
+
+        self.unseal(0xC3B1, 0x50DF)
+        sleep(0.1)
+        print(self.is_sealed())
+        sleep(0.1)
+
+        self.unseal(0x50DF, 0xC3B1)
+        sleep(0.1)
+        print(self.is_sealed())
+        sleep(0.1)
+
+        block = self.read_block_mac(array('B', b'\x40\x00'))
+        print(block)
+        sleep(0.1)
+
+    def is_sealed(self) -> bool:
+        operation_status_block = self.read_block_mac(OPERATIONSTATUS_CMD)
+        # sec = (self.get_bit(operation_status_block[2], 1) << 1) | self.get_bit(operation_status_block[2], 0)
+        sec = (self.get_bit(operation_status_block[1], 0) << 1) | self.get_bit(operation_status_block[1], 1)
+        print(sec)
+        if sec == 1 or sec == 2:
+            return False
+        return True
+
+    def unseal(self, word1, word2):
+        self.ev.smbus_write_word(DEV_ADDR, 0x00, word1)
+        self.ev.smbus_write_word(DEV_ADDR, 0x00, word2)
 
     def get_operation_status(self):
         operation_status_block = self.read_block_mac(OPERATIONSTATUS_CMD)
@@ -451,37 +524,3 @@ class BQ40Z50:
             serial_number = serial_number_block.tobytes().decode('utf-8').split(';')[0]
             return serial_number
         return None
-
-    def read_block_mac(self, CMD: array) -> array:
-        self.ev.smbus_write_block(DEV_ADDR, MAC_REG, CMD)
-        block = self.ev.smbus_read_block(DEV_ADDR, MAC_REG)
-
-        # First two block words need to be the command
-        if len(CMD) > 1 and not block[0] == CMD[0] and not block[1] == CMD[1]:
-            self.logger.warning("Read block CMD not correct")
-            return None
-        else:
-            # Remove the cmd from the output block
-            block.pop(0)
-            block.pop(0)
-
-        # Return as array object
-        return block
-
-    def read_block(self, CODE: array) -> array:
-        return self.ev.smbus_read_block(DEV_ADDR, CODE)
-
-    def read_word(self, REG: int):
-        word = self.ev.smbus_read_word(DEV_ADDR, REG)
-        if word:
-            return word
-        return None
-
-    def bytes_to_str(self, input_b: bytes, l: int) -> str:
-        output_str = ''
-        for i in range(l):
-            output_str += '{:08b}'.format(input_b[i])
-        return output_str
-
-    def get_bit(self, input_b: bytes, index: int) -> int:
-        return (input_b >> index) & 1
