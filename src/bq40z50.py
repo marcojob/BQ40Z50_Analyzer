@@ -16,26 +16,35 @@ class BQ40Z50:
         self.logger = logging.getLogger()
 
     def create_summary(self):
-        # Get existing data from battery_data.csv
-        self.prepare_csv()
+        while True:
+            # Get existing data from battery_data.csv
+            self.prepare_csv()
 
-        # Get summary into battery_dict
-        self.get_summary()
+            # Get summary into battery_dict
+            self.get_summary()
 
-        # Write battery_dict into file
-        self.write_summary()
+            # Write battery_dict into file
+            self.write_summary()
+
+            inp = input("Press ENTER for next battery")
 
     def write_summary(self):
         f = open(DATA_FILE, "a")
 
-        # Go through all fields
-        for key in self.battery_dict.keys():
-            # If the csv is empty we need to write keys first
-            if not self.battery_dict_ready:
+        # If the csv is empty we need to write keys first
+        if not self.battery_dict_ready:
+            # Set header len
+            self.HEADER_LEN = len(self.battery_dict.keys())
+            # Go through all fields
+            for key in self.battery_dict.keys():
                 f.write(key + ", ")
 
-        # Newline after header
-        f.write("\n")
+            # Newline after header
+            f.write("\n")
+
+        if not len(self.battery_dict.keys()) == self.HEADER_LEN:
+            self.logger.error("HEADER_LEN not matching")
+            return 1
 
         # Write data
         for key in self.battery_dict.keys():
@@ -43,6 +52,8 @@ class BQ40Z50:
 
         # Newline after data
         f.write("\n")
+
+        f.close()
 
 
     def prepare_csv(self):
@@ -52,6 +63,7 @@ class BQ40Z50:
 
         if not len(file_content) == 0:
             self.battery_dict_ready = True
+            self.HEADER_LEN = len(file_content[0].split(", ")) - 1
 
     def get_summary(self):
         # Add serial number
