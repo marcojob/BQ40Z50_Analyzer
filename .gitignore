@@ -100,4 +100,4 @@ ENV/
 # mypy
 .mypy_cache/
 
-battery_data.csv
+battery_data*.csv
