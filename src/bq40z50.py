@@ -113,14 +113,17 @@ class BQ40Z50:
         self.ev.smbus_write_block(DEV_ADDR, MAC_REG, CMD)
         block = self.ev.smbus_read_block(DEV_ADDR, MAC_REG)
 
-        # First two block words need to be the command
-        if len(CMD) > 1 and not block[0] == CMD[0] and not block[1] == CMD[1]:
-            self.logger.warning("Read block CMD not correct")
-            return None
+        if block:
+            # First two block words need to be the command
+            if len(CMD) > 1 and not block[0] == CMD[0] and not block[1] == CMD[1]:
+                self.logger.warning("Read block CMD not correct")
+                # return None
+            else:
+                # Remove the cmd from the output block
+                block.pop(0)
+                block.pop(0)
         else:
-            # Remove the cmd from the output block
-            block.pop(0)
-            block.pop(0)
+            self.logger.error("Could not read MAC block")
 
         # Return as array object
         return block
