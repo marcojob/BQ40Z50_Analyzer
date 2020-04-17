@@ -57,27 +57,87 @@ class BQ40Z50:
         voltage_dict = self.get_voltage()
         self.add_to_battery_dict(voltage_dict, "Voltage")
 
+        # Add current
+        current_dict = self.get_current()
+        self.add_to_battery_dict(current_dict, "Current")
+
+        # Add SOC
+        soc_dict = self.get_soc()
+        self.add_to_battery_dict(soc_dict, "SOC")
+
+        # Add battery status
+        battery_status_dict = self.get_battery_status()
+        self.add_to_battery_dict(battery_status_dict, "Battery Status")
+
     def write_log(self, f, time_now):
         print(self.battery_dict)
 
+    def get_soc(self):
+        soc_dict = dict()
+
+        max_error_word = self.read_word(MAXERROR_REG)
+        if max_error_word:
+            soc_dict["Max Error"] = max_error_word
+
+        relative_soc_word = self.read_word(RELATIVESOC_REG)
+        if relative_soc_word:
+            soc_dict["Relative SOC"] = relative_soc_word
+
+        absolute_soc_word = self.read_word(ABSOLUTESOC_REG)
+        if absolute_soc_word:
+            soc_dict["Absolute SOC"] = absolute_soc_word
+
+        remaining_cap_word = self.read_word(REMAININGCAPACITY_REG)
+        if remaining_cap_word:
+            soc_dict["Remaining capacity"] = remaining_cap_word
+
+        full_charge_cap_word = self.read_word(FULLCHARGECAPACITY_REG)
+        if full_charge_cap_word:
+            soc_dict["Full charge capacity"] = full_charge_cap_word
+
+        return soc_dict
+
+
     def get_voltage(self):
-        voltage_word = self.read_word(VOLTAGE_REG)
         voltage_dict = dict()
 
+        voltage_word = self.read_word(VOLTAGE_REG)
         if voltage_word:
             voltage_dict["Voltage"] = voltage_word
 
+        charging_voltage_word = self.read_word(CHARGINGVOLTAGE_REG)
+        if charging_voltage_word:
+            voltage_dict["Charging voltage"] = charging_voltage_word
         return voltage_dict
 
     def get_temperature(self):
         temperature_word = self.read_word(TEMPERATURE_REG)
         temperature_dict = dict()
 
-        if temperature_word:
+        if not temperature_word == DEFAULT_NA:
             # Convert to celsius
-            temperature_dict["Temperature"] = temperature_word/10.0 - 273.15
+            temperature_word = temperature_word/10.0 - 273.15
+
+        temperature_dict["Temperature"] = temperature_word
 
         return temperature_dict
+
+    def get_current(self):
+        current_dict = dict()
+
+        current_word = self.read_word(CURRENT_REG)
+        if current_word:
+            current_dict["Current"] = current_word
+
+        average_current_word = self.read_word(AVERAGECURRENT_REG)
+        if average_current_word:
+            current_dict["Average current"] = average_current_word
+
+        charging_current_word = self.read_word(CHARGINGCURRENT_REG)
+        if charging_current_word:
+            current_dict["Charging current"] = charging_current_word
+
+        return current_dict
 
     def create_summary(self):
         # TODO: change file handling to csv for all below methods
@@ -208,7 +268,7 @@ class BQ40Z50:
         word = self.ev.smbus_read_word(DEV_ADDR, REG)
         if word:
             return word
-        return None
+        return DEFAULT_NA
 
     def bytes_to_str(self, input_b: bytes, l: int) -> str:
         output_str = ''
