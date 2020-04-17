@@ -70,6 +70,14 @@ class BQ40Z50:
         serial_number_dict = self.get_serial_number()
         self.add_to_battery_dict(serial_number_dict, "Serial Number")
 
+        # Add cycle count
+        cycle_count_dict = self.get_cycle_count()
+        self.add_to_battery_dict(cycle_count_dict, "Cycle Count")
+
+        # Add SOH
+        soh_dict = self.get_soh()
+        self.add_to_battery_dict(soh_dict, "SOH")
+
         # Add lifetime 1 dict
         lifetime_1_dict = self.get_lifetime_1()
         self.add_to_battery_dict(lifetime_1_dict, "Lifetime 1")
@@ -183,6 +191,32 @@ class BQ40Z50:
     def unseal(self, word1, word2):
         self.ev.smbus_write_word(DEV_ADDR, 0x00, word1)
         self.ev.smbus_write_word(DEV_ADDR, 0x00, word2)
+
+    def get_cycle_count(self) -> dict:
+        cycle_count_word = self.read_word(CYCLECOUNT_REG)
+        cycle_count = dict()
+
+        if cycle_count_word:
+            cycle_count["Cycle count"] = cycle_count_word
+        return cycle_count
+
+    def get_soh(self) -> dict:
+        soh_word = self.read_word(SOH_REG)
+        soh = dict()
+
+        if soh_word:
+            soh["SOH"] = soh_word
+        return soh
+
+    def get_serial_number(self) -> dict:
+        serial_number_block = self.read_block(DEVICENAME_REG)
+        serial_number = dict()
+
+        if serial_number_block:
+            serial_number["Serial Number 1"] = serial_number_block.tobytes().decode('utf-8').split(';')[0]
+            serial_number["Serial Number 2"] = serial_number_block.tobytes().decode('utf-8').split(';')[1]
+
+        return serial_number
 
     def get_operation_status(self):
         operation_status_block = self.read_block_mac(OPERATIONSTATUS_CMD)
@@ -589,13 +623,3 @@ class BQ40Z50:
             lifetime['Max Temp Fet'] = lifetime_block[31]
 
         return lifetime
-
-    def get_serial_number(self) -> str:
-        serial_number_block = self.read_block(DEVICENAME_REG)
-        serial_number = dict()
-
-        if serial_number_block:
-            serial_number["Serial Number 1"] = serial_number_block.tobytes().decode('utf-8').split(';')[0]
-            serial_number["Serial Number 2"] = serial_number_block.tobytes().decode('utf-8').split(';')[1]
-
-        return serial_number

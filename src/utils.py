@@ -11,6 +11,7 @@ MAC_REG = 0x44 # Register of MAC
 
 # Read word
 BATTERYSTATUS_REG = 0x16
+CYCLECOUNT_REG = 0x17
 SOH_REG = 0x4F
 
 # Read block
