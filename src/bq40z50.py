@@ -5,7 +5,8 @@ from .utils import *
 from . import ev2300
 
 from array import array
-from time import sleep
+from time import sleep, monotonic
+from pathlib import Path
 
 class BQ40Z50:
     def __init__(self):
@@ -15,7 +16,71 @@ class BQ40Z50:
         self.battery_dict_ready = False
         self.logger = logging.getLogger()
 
+    def create_monitor(self, file_str):
+        # Prepare log file
+        log_path = Path(file_str)
+
+        # Create file if it doesn't exist'
+        log_path.touch()
+
+        # Prepare file, it needs to be empty
+        f = log_path.open()
+        content = f.readlines()
+        if content:
+            self.logger.error("Monitoring file is not empty, exiting")
+            #return -1
+
+        # Logging monitoring time setup
+        LOG_FREQ = 1
+        interval_ms = 1000.0/LOG_FREQ
+        log_time_last_ms = self.get_time_ms()
+
+
+        while(True):
+            log_time_now_ms = self.get_time_ms()
+
+            if log_time_now_ms > log_time_last_ms + interval_ms:
+                log_time_last_ms = log_time_now_ms
+
+                # Query the data
+                self.get_log()
+
+                # Write into file
+                self.write_log(f, log_time_now_ms)
+
+    def get_log(self):
+        # Add temperature
+        temperature_dict = self.get_temperature()
+        self.add_to_battery_dict(temperature_dict, "Temperature")
+
+        # Add voltage
+        voltage_dict = self.get_voltage()
+        self.add_to_battery_dict(voltage_dict, "Voltage")
+
+    def write_log(self, f, time_now):
+        print(self.battery_dict)
+
+    def get_voltage(self):
+        voltage_word = self.read_word(VOLTAGE_REG)
+        voltage_dict = dict()
+
+        if voltage_word:
+            voltage_dict["Voltage"] = voltage_word
+
+        return voltage_dict
+
+    def get_temperature(self):
+        temperature_word = self.read_word(TEMPERATURE_REG)
+        temperature_dict = dict()
+
+        if temperature_word:
+            # Convert to celsius
+            temperature_dict["Temperature"] = temperature_word/10.0 - 273.15
+
+        return temperature_dict
+
     def create_summary(self):
+        # TODO: change file handling to csv for all below methods
         while True:
             # Get existing data from battery_data.csv
             self.prepare_csv()
@@ -153,6 +218,11 @@ class BQ40Z50:
 
     def get_bit(self, input_b: bytes, index: int) -> int:
         return (input_b >> index) & 1
+
+    @staticmethod
+    def get_time_ms():
+        # https://www.python.org/dev/peps/pep-0418/#time-monotonic
+        return int(round(monotonic() * 1000))
 
     def try_unseal(self):
         self.unseal(0x79E6, 0x428A)
