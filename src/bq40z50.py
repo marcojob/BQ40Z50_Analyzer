@@ -371,6 +371,89 @@ class BQ40Z50:
 
         return serial_number
 
+    def get_pf_alert(self):
+        pf_alert_block = self.read_block_mac(PFALERT_CMD)
+        pf_alert = dict()
+
+        if pf_alert_block:
+            # Open Thermistor TS4 Failure
+            pf_alert['TS4'] = self.get_bit(pf_alert_block[0], 7)
+
+            # Open Thermistor TS3 Failure
+            pf_alert['TS3'] = self.get_bit(pf_alert_block[0], 6)
+
+            # Open Thermistor TS2 Failure
+            pf_alert['TS2'] = self.get_bit(pf_alert_block[0], 5)
+
+            # Open Thermistor TS1 Failure
+            pf_alert['TS1'] = self.get_bit(pf_alert_block[0], 4)
+
+            # Data flash wearout failure
+            pf_alert['DFW'] = self.get_bit(pf_alert_block[0], 2)
+
+            # Open cell tab connection failure
+            pf_alert['OPNCELL'] = self.get_bit(pf_alert_block[0], 1)
+
+            # Instruction flash checksum failure
+            pf_alert['IFC'] = self.get_bit(pf_alert_block[0], 0)
+
+            # PTC failure
+            pf_alert['PTC'] = self.get_bit(pf_alert_block[1], 7)
+
+            # Second level protector failure
+            pf_alert['2LVL'] = self.get_bit(pf_alert_block[1], 6)
+
+            # AFE communication failure
+            pf_alert['AFEC'] = self.get_bit(pf_alert_block[1], 5)
+
+            # AFE register failure
+            pf_alert['AFER'] = self.get_bit(pf_alert_block[1], 4)
+
+            # Chemical fuse failure
+            pf_alert['FUSE'] = self.get_bit(pf_alert_block[1], 3)
+
+            # Disharge FET failure
+            pf_alert['DFETF'] = self.get_bit(pf_alert_block[1], 1)
+
+            # Charge FET failure
+            pf_alert['CFETF'] = self.get_bit(pf_alert_block[1], 0)
+
+            # Voltage imbalance while pack is active failure
+            pf_alert['VIMA'] = self.get_bit(pf_alert_block[2], 4)
+
+            # Voltage imbalance while pack is at rest failure
+            pf_alert['VIMR'] = self.get_bit(pf_alert_block[2], 3)
+
+            # Capacity degradation failure
+            pf_alert['CD'] = self.get_bit(pf_alert_block[2], 2)
+
+            # Impedance failure
+            pf_alert['IMP'] = self.get_bit(pf_alert_block[2], 1)
+
+            # Cell balancing failure
+            pf_alert['CB'] = self.get_bit(pf_alert_block[2], 0)
+
+            # QMax imbalance failure
+            pf_alert['QIM'] = self.get_bit(pf_alert_block[3], 7)
+
+            # Safety overtemperature FET failure
+            pf_alert['SOTF'] = self.get_bit(pf_alert_block[3], 6)
+
+            # Safety overtemperature cell failure
+            pf_alert['SOT'] = self.get_bit(pf_alert_block[3], 4)
+
+            # Safety over current in discharge
+            pf_alert['SOCD'] = self.get_bit(pf_alert_block[3], 3)
+
+            # Safety overrcurrent in charge
+            pf_alert['SOCC'] = self.get_operation_status(pf_alert_block[3], 2)
+
+            # Safety cell overvoltage failure
+            pf_alert['SOV'] = self.get_bit(pf_alert_block[3], 1)
+
+            # Safety cell undervoltage failure
+            pf_alert['SUV'] = self.get_bit(pf_alert_block[3], 0)
+
     def get_pf_status(self):
         pf_status_block = self.read_block_mac(PFSTATUS_CMD)
         pf_status = dict()
@@ -446,7 +529,7 @@ class BQ40Z50:
             pf_status['SOCD'] = self.get_bit(pf_status_block[3], 3)
 
             # Safety overrcurrent in charge
-            pf_status['SOCC'] = self.get_operation_status([3], 2)
+            pf_status['SOCC'] = self.get_operation_status(pf_status_block[3], 2)
 
             # Safety cell overvoltage failure
             pf_status['SOV'] = self.get_bit(pf_status_block[3], 1)
