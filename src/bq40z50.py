@@ -69,8 +69,27 @@ class BQ40Z50:
         battery_status_dict = self.get_battery_status()
         self.add_to_battery_dict(battery_status_dict, "Battery Status")
 
+        # Add SOH
+        soh_dict = self.get_soh()
+        self.add_to_battery_dict(soh_dict, "SOH")
+
+        # Add safety status
+        safety_status_dict = self.get_safety_status()
+        self.add_to_battery_dict(safety_status_dict, "Safety Status")
+
     def write_log(self, f, time_now):
         print(self.battery_dict)
+
+    def get_soh(self):
+        soh_dict = dict()
+
+        cycle_count_word = self.read_word(CYCLECOUNT_REG)
+        if cycle_count_word:
+            soh_dict["Cycle count"] = cycle_count_word
+
+        soh_word = self.read_word(SOH_REG)
+        if soh_word:
+            soh_dict["SOH"] = soh_word
 
     def get_soc(self):
         soc_dict = dict()
@@ -494,7 +513,6 @@ class BQ40Z50:
                 battery_status['status'] = 'overflow/underflow'
 
         return battery_status
-
 
     def get_safety_status(self):
         safety_status_block = self.read_block_mac(SAFETYSTATUS_CMD)
