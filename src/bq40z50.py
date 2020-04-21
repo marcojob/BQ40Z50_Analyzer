@@ -93,6 +93,34 @@ class BQ40Z50:
         gauging_status_dict = self.get_gauging_status()
         self.add_to_battery_dict(gauging_status_dict, "Gauging Status")
 
+        # Add lifetime 1 dict
+        lifetime_1_dict = self.get_lifetime_1()
+        self.add_to_battery_dict(lifetime_1_dict, "Lifetime 1")
+
+        # Add lifetime 2 dict
+        lifetime_2_dict = self.get_lifetime_2()
+        self.add_to_battery_dict(lifetime_2_dict, "Lifetime 2")
+
+        # Add lifetime 3 dict
+        lifetime_3_dict = self.get_lifetime_3()
+        self.add_to_battery_dict(lifetime_3_dict, "Lifetime 3")
+
+        # Add lifetime 4 dict
+        lifetime_4_dict = self.get_lifetime_4()
+        self.add_to_battery_dict(lifetime_4_dict, "Lifetime 4")
+
+        # Add lifetime 5 dict
+        lifetime_5_dict = self.get_lifetime_5()
+        self.add_to_battery_dict(lifetime_5_dict, "Lifetime 5")
+
+        # Add DAStatus1
+        dastatus1_dict = self.get_da_status1()
+        self.add_to_battery_dict(dastatus1_dict, "DAStatus1")
+
+        # Add DAStatus2
+        dastatus2_dict = self.get_da_status2()
+        self.add_to_battery_dict(dastatus2_dict, "DAStatus2")
+
     def write_log(self, f, time_now):
         print(self.battery_dict)
 
@@ -390,6 +418,89 @@ class BQ40Z50:
             serial_number["Serial Number 2"] = serial_number_block.tobytes().decode('utf-8').split(';')[1]
 
         return serial_number
+
+    def get_da_status1(self):
+        da_status_block = self.read_block_mac(DASTATUS1_CMD)
+        da_status = dict()
+
+        if da_status_block:
+            # Cell voltage 1
+            da_status['Cell voltage 1'] = (da_status_block[1] << 8) | da_status_block[0]
+
+            # Cell voltage 2
+            da_status['Cell voltage 2'] = (da_status_block[3] << 8) | da_status_block[2]
+
+            # Cell voltage 3
+            da_status['Cell voltage 3'] = (da_status_block[5] << 8) | da_status_block[4]
+
+            # Cell voltage 4
+            da_status['Cell voltage 4'] = (da_status_block[7] << 8) | da_status_block[6]
+
+            # BAT voltage (really measured, not just sum)
+            da_status['BAT voltage'] = (da_status_block[9] << 8) | da_status_block[8]
+
+            # Pack voltage
+            da_status['Pack voltage'] = (da_status_block[11] << 8) | da_status_block[10]
+
+            # Cell current 1
+            da_status['Cell current 1'] = (da_status_block[13] << 8) | da_status_block[12]
+
+            # Cell current 2
+            da_status['Cell current 2'] = (da_status_block[15] << 8) | da_status_block[14]
+
+            # Cell current 3
+            da_status['Cell current 3'] = (da_status_block[17] << 8) | da_status_block[16]
+
+            # Cell current 4
+            da_status['Cell current 4'] = (da_status_block[19] << 8) | da_status_block[18]
+
+            # Cell power 1
+            da_status['Cell power 1'] = (da_status_block[21] << 8) | da_status_block[20]
+
+            # Cell power 2
+            da_status['Cell power 2'] = (da_status_block[23] << 8) | da_status_block[22]
+
+            # Cell power 3
+            da_status['Cell power 3'] = (da_status_block[25] << 8) | da_status_block[24]
+
+            # Cell power 4
+            da_status['Cell power 4'] = (da_status_block[27] << 8) | da_status_block[26]
+
+            # Power voltage() * current()
+            da_status['Power'] = (da_status_block[29] << 8) | da_status_block[28]
+
+            # Average power
+            da_status['Avg power'] = (da_status_block[31] << 8) | da_status_block[30]
+
+        return da_status
+
+    def get_da_status2(self):
+        da_status_block = self.read_block_mac(DASTATUS2_CMD)
+        da_status = dict()
+
+        if da_status_block:
+            # Int temperature
+            da_status['Int temperature'] = (da_status_block[1] << 8) | da_status_block[0]
+
+            # TS1 Temperature
+            da_status['TS1 temperature'] = (da_status_block[3] << 8) | da_status_block[2]
+
+            # TS2 Temperature
+            da_status['TS2 temperature'] = (da_status_block[5] << 8) | da_status_block[4]
+
+            # TS3 Temperature
+            da_status['TS3 temperature'] = (da_status_block[7] << 8) | da_status_block[6]
+
+            # TS4 Temperature
+            da_status['TS4 temperature'] = (da_status_block[9] << 8) | da_status_block[8]
+
+            # Cell Temperature
+            da_status['Cell temperature'] = (da_status_block[11] << 8) | da_status_block[10]
+
+            # FET Temperature
+            da_status['FET temperature'] = (da_status_block[13] << 8) | da_status_block[12]
+
+        return da_status
 
     def get_gauging_status(self):
         gauging_status_block = self.read_block_mac(GAUGINGSTATUS_CMD)

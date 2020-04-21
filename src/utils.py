@@ -47,3 +47,10 @@ LIFETIMEDATABLOCK2_CMD = array('B', b'\x61\x00')
 LIFETIMEDATABLOCK3_CMD = array('B', b'\x62\x00')
 LIFETIMEDATABLOCK4_CMD = array('B', b'\x63\x00')
 LIFETIMEDATABLOCK5_CMD = array('B', b'\x64\x00')
+
+DASTATUS1_CMD = array('B', b'\x71\x00')
+DASTATUS2_CMD = array('B', b'\x72\x00')
+
+GAUGESTATUS1_CMD = array('B', b'\x73\x00')
+GAUGESTATUS2_CMD = array('B', b'\x74\x00')
+GAUGESTATUS3_CMD = array('B', b'\x75\x00')
