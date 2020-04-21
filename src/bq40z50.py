@@ -372,7 +372,10 @@ class BQ40Z50:
         return output_str
 
     def get_bit(self, input_b: bytes, index: int) -> int:
-        return (input_b >> index) & 1
+        if input_b is not DEFAULT_NA:
+            return (input_b >> index) & 1
+        else:
+            return input_b
 
     @staticmethod
     def get_time_ms():
@@ -444,7 +447,7 @@ class BQ40Z50:
         return serial_number
 
     def get_gauge_status3(self):
-        gauge_status_block = self.read_block_mac(GAUGINGSTATUS3_CMD)
+        gauge_status_block = self.read_block_mac(GAUGESTATUS3_CMD)
         gauge_status = dict()
 
         if gauge_status_block:
@@ -487,7 +490,7 @@ class BQ40Z50:
         return gauge_status
 
     def get_gauge_status2(self):
-        gauge_status_block = self.read_block_mac(GAUGINGSTATUS2_CMD)
+        gauge_status_block = self.read_block_mac(GAUGESTATUS1_CMD)
         gauge_status = dict()
 
         if gauge_status_block:
@@ -562,7 +565,7 @@ class BQ40Z50:
         return gauge_status
 
     def get_gauge_status1(self):
-        gauge_status_block = self.read_block_mac(GAUGINGSTATUS1_CMD)
+        gauge_status_block = self.read_block_mac(GAUGESTATUS1_CMD)
         gauge_status = dict()
 
         if gauge_status_block:
@@ -922,13 +925,15 @@ class BQ40Z50:
             pf_status['SOCD'] = self.get_bit(pf_status_block[3], 3)
 
             # Safety overrcurrent in charge
-            pf_status['SOCC'] = self.get_operation_status(pf_status_block[3], 2)
+            pf_status['SOCC'] = self.get_bit(pf_status_block[3], 2)
 
             # Safety cell overvoltage failure
             pf_status['SOV'] = self.get_bit(pf_status_block[3], 1)
 
             # Safety cell undervoltage failure
             pf_status['SUV'] = self.get_bit(pf_status_block[3], 0)
+
+        return pf_status
 
     def get_operation_status(self):
         operation_status_block = self.read_block_mac(OPERATIONSTATUS_CMD)
@@ -1060,20 +1065,23 @@ class BQ40Z50:
             # Fully discharged
             battery_status['FD'] = self.get_bit(battery_status_word, 4)
 
-            status = battery_status_word & 0b111
+            if battery_status_word is not DEFAULT_NA:
+                status = battery_status_word & 0b111
 
-            if status == 0:
-                battery_status['status'] = 'OK'
-            elif status == 1:
-                battery_status['status'] = 'BUSY'
-            elif status == 2:
-                battery_status['status'] = 'RSVD'
-            elif status == 3:
-                battery_status['status'] = 'unsupported'
-            elif status == 4:
-                battery_status['status'] = 'access denied'
-            elif status == 5:
-                battery_status['status'] = 'overflow/underflow'
+                if status == 0:
+                    battery_status['status'] = 'OK'
+                elif status == 1:
+                    battery_status['status'] = 'BUSY'
+                elif status == 2:
+                    battery_status['status'] = 'RSVD'
+                elif status == 3:
+                    battery_status['status'] = 'unsupported'
+                elif status == 4:
+                    battery_status['status'] = 'access denied'
+                elif status == 5:
+                    battery_status['status'] = 'overflow/underflow'
+            else:
+                battery_status['status'] = DEFAULT_NA
 
         return battery_status
 
