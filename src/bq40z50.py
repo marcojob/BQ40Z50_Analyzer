@@ -371,6 +371,89 @@ class BQ40Z50:
 
         return serial_number
 
+    def get_pf_status(self):
+        pf_status_block = self.read_block_mac(PFSTATUS_CMD)
+        pf_status = dict()
+
+        if pf_status_block:
+            # Open Thermistor TS4 Failure
+            pf_status['TS4'] = self.get_bit(pf_status_block[0], 7)
+
+            # Open Thermistor TS3 Failure
+            pf_status['TS3'] = self.get_bit(pf_status_block[0], 6)
+
+            # Open Thermistor TS2 Failure
+            pf_status['TS2'] = self.get_bit(pf_status_block[0], 5)
+
+            # Open Thermistor TS1 Failure
+            pf_status['TS1'] = self.get_bit(pf_status_block[0], 4)
+
+            # Data flash wearout failure
+            pf_status['DFW'] = self.get_bit(pf_status_block[0], 2)
+
+            # Open cell tab connection failure
+            pf_status['OPNCELL'] = self.get_bit(pf_status_block[0], 1)
+
+            # Instruction flash checksum failure
+            pf_status['IFC'] = self.get_bit(pf_status_block[0], 0)
+
+            # PTC failure
+            pf_status['PTC'] = self.get_bit(pf_status_block[1], 7)
+
+            # Second level protector failure
+            pf_status['2LVL'] = self.get_bit(pf_status_block[1], 6)
+
+            # AFE communication failure
+            pf_status['AFEC'] = self.get_bit(pf_status_block[1], 5)
+
+            # AFE register failure
+            pf_status['AFER'] = self.get_bit(pf_status_block[1], 4)
+
+            # Chemical fuse failure
+            pf_status['FUSE'] = self.get_bit(pf_status_block[1], 3)
+
+            # Disharge FET failure
+            pf_status['DFETF'] = self.get_bit(pf_status_block[1], 1)
+
+            # Charge FET failure
+            pf_status['CFETF'] = self.get_bit(pf_status_block[1], 0)
+
+            # Voltage imbalance while pack is active failure
+            pf_status['VIMA'] = self.get_bit(pf_status_block[2], 4)
+
+            # Voltage imbalance while pack is at rest failure
+            pf_status['VIMR'] = self.get_bit(pf_status_block[2], 3)
+
+            # Capacity degradation failure
+            pf_status['CD'] = self.get_bit(pf_status_block[2], 2)
+
+            # Impedance failure
+            pf_status['IMP'] = self.get_bit(pf_status_block[2], 1)
+
+            # Cell balancing failure
+            pf_status['CB'] = self.get_bit(pf_status_block[2], 0)
+
+            # QMax imbalance failure
+            pf_status['QIM'] = self.get_bit(pf_status_block[3], 7)
+
+            # Safety overtemperature FET failure
+            pf_status['SOTF'] = self.get_bit(pf_status_block[3], 6)
+
+            # Safety overtemperature cell failure
+            pf_status['SOT'] = self.get_bit(pf_status_block[3], 4)
+
+            # Safety over current in discharge
+            pf_status['SOCD'] = self.get_bit(pf_status_block[3], 3)
+
+            # Safety overrcurrent in charge
+            pf_status['SOCC'] = self.get_operation_status([3], 2)
+
+            # Safety cell overvoltage failure
+            pf_status['SOV'] = self.get_bit(pf_status_block[3], 1)
+
+            # Safety cell undervoltage failure
+            pf_status['SUV'] = self.get_bit(pf_status_block[3], 0)
+
     def get_operation_status(self):
         operation_status_block = self.read_block_mac(OPERATIONSTATUS_CMD)
         operation_status = dict()
