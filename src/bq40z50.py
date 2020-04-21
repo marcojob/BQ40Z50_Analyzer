@@ -81,6 +81,18 @@ class BQ40Z50:
         safety_alert_dict = self.get_safety_alert()
         self.add_to_battery_dict(safety_alert_dict, "Safety Alert")
 
+        # Add PF status
+        pf_status_dict = self.get_pf_status()
+        self.add_to_battery_dict(pf_status_dict, "PF Status")
+
+        # Add PF alert
+        pf_alert_dict = self.get_pf_alert()
+        self.add_to_battery_dict(pf_alert_dict, "PF Alert")
+
+        # Add gauging status
+        gauging_status_dict = self.get_gauging_status()
+        self.add_to_battery_dict(gauging_status_dict, "Gauging Status")
+
     def write_log(self, f, time_now):
         print(self.battery_dict)
 
@@ -258,6 +270,14 @@ class BQ40Z50:
         operation_status_dict = self.get_operation_status()
         self.add_to_battery_dict(operation_status_dict, "Operation Status")
 
+        # Add PF status
+        pf_status_dict = self.get_pf_status()
+        self.add_to_battery_dict(pf_status_dict, "PF Status")
+
+        # Add gauging status
+        gauging_status_dict = self.get_gauging_status()
+        self.add_to_battery_dict(gauging_status_dict, "Gauging Status")
+
     def add_to_battery_dict(self, result_dict: dict, topic_name: str):
         for key in result_dict.keys():
             field_name = topic_name + ": " + key
@@ -370,6 +390,71 @@ class BQ40Z50:
             serial_number["Serial Number 2"] = serial_number_block.tobytes().decode('utf-8').split(';')[1]
 
         return serial_number
+
+    def get_gauging_status(self):
+        gauging_status_block = self.read_block_mac(GAUGINGSTATUS_CMD)
+        gauging_status = dict()
+
+        if gauging_status_block:
+            # Open circuit voltage in flat region during relax
+            gauging_status['OCVFR'] = self.get_bit(gauging_status_block[0], 4)
+
+            # LOAD MODE
+            gauging_status['LDMD'] = self.get_bit(gauging_status_block[0], 3)
+
+            # resistance update
+            gauging_status['RX'] = self.get_bit(gauging_status_block[0], 2)
+
+            # qmax update
+            gauging_status['QMax'] = self.get_bit(gauging_status_block[0], 1)
+
+            # Discharge qualified for learning
+            gauging_status['VDQ'] = self.get_bit(gauging_status_block[0], 0)
+
+            # Negative scale factor mode
+            gauging_status['NSFM'] = self.get_bit(gauging_status_block[1], 7)
+
+            # OCV update in sleep mode
+            gauging_status['SLPQMax'] = self.get_bit(gauging_status_block[1], 5)
+
+            # Impedance track gauging (Ra and Qmax update are enabled)
+            gauging_status['QEN'] = self.get_bit(gauging_status_block[1], 4)
+
+            # Voltage are ok for QMax update
+            gauging_status['VOK'] = self.get_bit(gauging_status_block[1], 3)
+
+            # Resistance updates
+            gauging_status['R_DIS'] = self.get_bit(gauging_status_block[1], 2)
+
+            # Rest, 1: OCV Reading taken, 0: OCV Reading not taken or not in relax
+            gauging_status['REST'] = self.get_bit(gauging_status_block[1], 1)
+
+            # Condition flag, 1: MaxError > Max Error Limit, 0: <
+            gauging_status['CF'] = self.get_bit(gauging_status_block[2], 7)
+
+            # Discharge / relax
+            gauging_status['DSG'] = self.get_bit(gauging_status_block[2], 6)
+
+            # End of discharge termination voltage
+            gauging_status['EDV'] = self.get_bit(gauging_status_block[2], 5)
+
+            # Cell balancing
+            gauging_status['BAL_EN'] = self.get_bit(gauging_status_block[2], 4)
+
+            # Terminate charge
+            gauging_status['TC'] = self.get_bit(gauging_status_block[2], 3)
+
+            # Terminate discharge
+            gauging_status['TD'] = self.get_bit(gauging_status_block[2], 2)
+
+            # Fully charged
+            gauging_status['FC'] = self.get_bit(gauging_status_block[2], 1)
+
+            # Fully discharged
+            gauging_status['FD'] = self.get_bit(gauging_status_block[2], 0)
+
+        return gauging_status
+
 
     def get_pf_alert(self):
         pf_alert_block = self.read_block_mac(PFALERT_CMD)

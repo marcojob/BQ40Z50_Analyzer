@@ -40,6 +40,7 @@ SAFETYSTATUS_CMD = array('B', b'\x51\x00')
 PFALERT_CMD = array('B', b'\x52\x00')
 PFSTATUS_CMD = array('B', b'\x53\x00')
 OPERATIONSTATUS_CMD = array('B', b'\x54\x00')
+GAUGINGSTATUS_CMD = array('B', b'\x55\x00')
 
 LIFETIMEDATABLOCK1_CMD = array('B', b'\x60\x00')
 LIFETIMEDATABLOCK2_CMD = array('B', b'\x61\x00')
