@@ -31,7 +31,7 @@ class BQ40Z50:
             #return -1
 
         # Logging monitoring time setup
-        LOG_FREQ = 1
+        LOG_FREQ = 2
         interval_ms = 1000.0/LOG_FREQ
         log_time_last_ms = self.get_time_ms()
 
@@ -144,6 +144,7 @@ class BQ40Z50:
         for key in self.battery_dict.keys():
             f.write(str(self.battery_dict[key]) + ", ")
         f.write("\n")
+        self.logger.info(f"Log: {round(monotonic())}, Cell 1: {self.battery_dict['DAStatus1: Cell voltage 1']} mV, T: {self.battery_dict['Temperature: Temperature']}")
 
     def get_soh(self):
         soh_dict = dict()
