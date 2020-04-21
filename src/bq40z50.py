@@ -24,7 +24,7 @@ class BQ40Z50:
         log_path.touch()
 
         # Prepare file, it needs to be empty
-        f = log_path.open()
+        f = log_path.open(mode='w+')
         content = f.readlines()
         if content:
             self.logger.error("Monitoring file is not empty, exiting")
@@ -134,7 +134,16 @@ class BQ40Z50:
         self.add_to_battery_dict(gauge_status_3, "GaugeStatus3")
 
     def write_log(self, f, time_now):
-        print(self.battery_dict)
+        # Write header first
+        if not self.battery_dict_ready:
+            self.battery_dict_ready = True
+            for key in self.battery_dict.keys():
+                f.write(key + ", ")
+            f.write("\n")
+        # Write values
+        for key in self.battery_dict.keys():
+            f.write(str(self.battery_dict[key]) + ", ")
+        f.write("\n")
 
     def get_soh(self):
         soh_dict = dict()
@@ -842,13 +851,15 @@ class BQ40Z50:
             pf_alert['SOCD'] = self.get_bit(pf_alert_block[3], 3)
 
             # Safety overrcurrent in charge
-            pf_alert['SOCC'] = self.get_operation_status(pf_alert_block[3], 2)
+            pf_alert['SOCC'] = self.get_bit(pf_alert_block[3], 2)
 
             # Safety cell overvoltage failure
             pf_alert['SOV'] = self.get_bit(pf_alert_block[3], 1)
 
             # Safety cell undervoltage failure
             pf_alert['SUV'] = self.get_bit(pf_alert_block[3], 0)
+
+        return pf_alert
 
     def get_pf_status(self):
         pf_status_block = self.read_block_mac(PFSTATUS_CMD)
@@ -1089,7 +1100,7 @@ class BQ40Z50:
         safety_alert_block = self.read_block_mac(SAFETYALERT_CMD)
         safety_alert = dict()
 
-        if safety_status_block:
+        if safety_alert_block:
             # Undertemperature during Discharge
             safety_alert['UTD'] = self.get_bit(safety_alert_block[0], 3)
 
