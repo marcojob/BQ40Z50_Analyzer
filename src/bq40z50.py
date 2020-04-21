@@ -127,7 +127,11 @@ class BQ40Z50:
 
         # Add gauge status 2
         gauge_status_2 = self.get_gauge_status2()
-        self.add_to_battery_dict(gauge_status_1, "GaugeStatus2")
+        self.add_to_battery_dict(gauge_status_2, "GaugeStatus2")
+
+        # Add gauge status 3
+        gauge_status_3 = self.get_gauge_status3()
+        self.add_to_battery_dict(gauge_status_3, "GaugeStatus3")
 
     def write_log(self, f, time_now):
         print(self.battery_dict)
@@ -320,7 +324,11 @@ class BQ40Z50:
 
         # Add gauge status 2
         gauge_status_2 = self.get_gauge_status2()
-        self.add_to_battery_dict(gauge_status_1, "GaugeStatus2")
+        self.add_to_battery_dict(gauge_status_2, "GaugeStatus2")
+
+        # Add gauge status 3
+        gauge_status_3 = self.get_gauge_status3()
+        self.add_to_battery_dict(gauge_status_3, "GaugeStatus3")
 
     def add_to_battery_dict(self, result_dict: dict, topic_name: str):
         for key in result_dict.keys():
@@ -434,6 +442,49 @@ class BQ40Z50:
             serial_number["Serial Number 2"] = serial_number_block.tobytes().decode('utf-8').split(';')[1]
 
         return serial_number
+
+    def get_gauge_status3(self):
+        gauge_status_block = self.read_block_mac(GAUGINGSTATUS3_CMD)
+        gauge_status = dict()
+
+        if gauge_status_block:
+            # QMax 0
+            gauge_status['QMax 0'] = (gauge_status_block[1] << 8) | gauge_status_block[0]
+
+            # QMax 1
+            gauge_status['QMax 1'] = (gauge_status_block[3] << 8) | gauge_status_block[2]
+
+            # QMax 2
+            gauge_status['QMax 2'] = (gauge_status_block[5] << 8) | gauge_status_block[4]
+
+            # QMax 3
+            gauge_status['QMax 3'] = (gauge_status_block[7] << 8) | gauge_status_block[6]
+
+            # QMax DOD0_0
+            gauge_status['QMax DOD0_0'] = (gauge_status_block[9] << 8) | gauge_status_block[8]
+
+            # QMax DOD0_1
+            gauge_status['QMax DOD0_1'] = (gauge_status_block[11] << 8) | gauge_status_block[10]
+
+            # QMax DOD0_2
+            gauge_status['QMax DOD0_2'] = (gauge_status_block[13] << 8) | gauge_status_block[12]
+
+            # QMax DOD0_3
+            gauge_status['QMax DOD0_3'] = (gauge_status_block[15] << 8) | gauge_status_block[14]
+
+            # QMax Passed Q
+            gauge_status['QMax Passed Q'] = (gauge_status_block[17] << 8) | gauge_status_block[16]
+
+            # QMax Time
+            gauge_status['QMax Time'] = (gauge_status_block[19] << 8) | gauge_status_block[18]
+
+            # Temp k: Thermal model temperature factor
+            gauge_status['Temp k'] = (gauge_status_block[21] << 8) | gauge_status_block[20]
+
+            # Temp a: Thermal model temperature
+            gauge_status['Temp a'] = (gauge_status_block[23] << 8) | gauge_status_block[22]
+
+        return gauge_status
 
     def get_gauge_status2(self):
         gauge_status_block = self.read_block_mac(GAUGINGSTATUS2_CMD)
