@@ -77,6 +77,10 @@ class BQ40Z50:
         safety_status_dict = self.get_safety_status()
         self.add_to_battery_dict(safety_status_dict, "Safety Status")
 
+        # Add safety alert
+        safety_alert_dict = self.get_safety_alert()
+        self.add_to_battery_dict(safety_alert_dict, "Safety Alert")
+
     def write_log(self, f, time_now):
         print(self.battery_dict)
 
@@ -513,6 +517,86 @@ class BQ40Z50:
                 battery_status['status'] = 'overflow/underflow'
 
         return battery_status
+
+    def get_safety_alert(self):
+        safety_alert_block = self.read_block_mac(SAFETYALERT_CMD)
+        safety_alert = dict()
+
+        if safety_status_block:
+            # Undertemperature during Discharge
+            safety_alert['UTD'] = self.get_bit(safety_alert_block[0], 3)
+
+            # Undertemperature during Charge
+            safety_alert['UTC'] = self.get_bit(safety_alert_block[0], 2)
+
+            # Over-Precharge Current
+            safety_alert['PCHGC'] = self.get_bit(safety_alert_block[0], 1)
+
+            # Overcharging voltage
+            safety_alert['CHGV'] = self.get_bit(safety_alert_block[0], 0)
+
+            # Overcharging current
+            safety_alert['CHGC'] = self.get_bit(safety_alert_block[1], 7)
+
+            # Overcharge
+            safety_alert['OC'] = self.get_bit(safety_alert_block[1], 6)
+
+            # Charge Timeout
+            safety_alert['CTO'] = self.get_bit(safety_alert_block[1], 4)
+
+            # Precharge Timeout
+            safety_alert['PTO'] = self.get_bit(safety_alert_block[1], 2)
+
+            # Overtemperature FET
+            safety_alert['OTF'] = self.get_bit(safety_alert_block[1], 0)
+
+            # Cell Undervoltage Compensated
+            safety_alert['CUVC'] = self.get_bit(safety_alert_block[2], 6)
+
+            # Overtemperature during discharge
+            safety_alert['OTD'] = self.get_bit(safety_alert_block[2], 5)
+
+            # Overtemperature during charge
+            safety_alert['OTC'] = self.get_bit(safety_alert_block[2], 4)
+
+            # Short-circuit during discharge latch
+            safety_alert['ASCDL'] = self.get_bit(safety_alert_block[2], 3)
+
+            # Short-circuit during discharge
+            safety_alert['ASCD'] = self.get_bit(safety_alert_block[2], 2)
+
+            # Short-circuit during during charge latch
+            safety_alert['ASCCL'] = self.get_bit(safety_alert_block[2], 1)
+
+            # Short-circuit during charge
+            safety_alert['ASCC'] = self.get_bit(safety_alert_block[2], 0)
+
+            # Overload during discharge latch
+            safety_alert['AOLDL'] = self.get_bit(safety_alert_block[3], 7)
+
+            # Overload during discharge
+            safety_alert['AOLD'] = self.get_bit(safety_alert_block[3], 6)
+
+            # Overcurrent during discharge 2
+            safety_alert['OCD2'] = self.get_bit(safety_alert_block[3], 5)
+
+            # Overcurrent during discharge 1
+            safety_alert['OCD1'] = self.get_bit(safety_alert_block[3], 4)
+
+            # Overcurrent during charge 2
+            safety_alert['OCC2'] = self.get_bit(safety_alert_block[3], 3)
+
+            # Overcurrent during charge 1
+            safety_alert['OCC1'] = self.get_bit(safety_alert_block[3], 2)
+
+            # Cell overvoltage
+            safety_alert['COV'] = self.get_bit(safety_alert_block[3], 1)
+
+            # Cell undervoltage
+            safety_alert['CUV'] = self.get_bit(safety_alert_block[3], 0)
+
+        return safety_alert
+
 
     def get_safety_status(self):
         safety_status_block = self.read_block_mac(SAFETYSTATUS_CMD)
