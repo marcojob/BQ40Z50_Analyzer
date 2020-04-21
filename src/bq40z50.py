@@ -121,6 +121,10 @@ class BQ40Z50:
         dastatus2_dict = self.get_da_status2()
         self.add_to_battery_dict(dastatus2_dict, "DAStatus2")
 
+        # Add gauge status 1
+        gauge_status_1 = self.get_gauge_status1()
+        self.add_to_battery_dict(gauge_status_1, "GaugeStatus1")
+
     def write_log(self, f, time_now):
         print(self.battery_dict)
 
@@ -306,6 +310,10 @@ class BQ40Z50:
         gauging_status_dict = self.get_gauging_status()
         self.add_to_battery_dict(gauging_status_dict, "Gauging Status")
 
+        # Add gauge status 1
+        gauge_status_1 = self.get_gauge_status1()
+        self.add_to_battery_dict(gauge_status_1, "GaugeStatus1")
+
     def add_to_battery_dict(self, result_dict: dict, topic_name: str):
         for key in result_dict.keys():
             field_name = topic_name + ": " + key
@@ -418,6 +426,61 @@ class BQ40Z50:
             serial_number["Serial Number 2"] = serial_number_block.tobytes().decode('utf-8').split(';')[1]
 
         return serial_number
+
+    def get_gauge_status1(self):
+        gauge_status_block = self.read_block_mac(GAUGINGSTATUS1_CMD)
+        gauge_status = dict()
+
+        if gauge_status_block:
+            # True Rem Q
+            gauge_status['True Rem Q'] = (gauge_status_block[1] << 8) | gauge_status_block[0]
+
+            # True Rem E
+            gauge_status['True Rem E'] = (gauge_status_block[3] << 8) | gauge_status_block[2]
+
+            # Initial Q
+            gauge_status['Initial Q'] = (gauge_status_block[5] << 8) | gauge_status_block[4]
+
+            # Initial E
+            gauge_status['Initial E'] = (gauge_status_block[7] << 8) | gauge_status_block[6]
+
+            # True FCC Q
+            gauge_status['True FCC Q'] = (gauge_status_block[9] << 8) | gauge_status_block[8]
+
+            # True FCC E
+            gauge_status['True FCC E'] = (gauge_status_block[11] << 8) | gauge_status_block[10]
+
+            # T_sim, temperature during last simulation run
+            gauge_status['T_sim'] = (gauge_status_block[13] << 8) | gauge_status_block[12]
+
+            # T_ambient, current assumed ambient temperature
+            gauge_status['T_ambient'] = (gauge_status_block[15] << 8) | gauge_status_block[14]
+
+            # Ra Scale 0
+            gauge_status['Ra Scale 0'] = (gauge_status_block[17] << 8) | gauge_status_block[16]
+
+            # Ra Scale 1
+            gauge_status['Ra Scale 1'] = (gauge_status_block[19] << 8) | gauge_status_block[18]
+
+            # Ra Scale 2
+            gauge_status['Ra Scale 2'] = (gauge_status_block[21] << 8) | gauge_status_block[20]
+
+            # Ra Scale 3
+            gauge_status['Ra Scale 3'] = (gauge_status_block[23] << 8) | gauge_status_block[22]
+
+            # Comp Res 0
+            gauge_status['Comp Res 0'] = (gauge_status_block[25] << 8) | gauge_status_block[24]
+
+            # Comp Res 1
+            gauge_status['Comp Res 1'] = (gauge_status_block[27] << 8) | gauge_status_block[26]
+
+            # Comp Res 2
+            gauge_status['Comp Res 2'] = (gauge_status_block[29] << 8) | gauge_status_block[28]
+
+            # Comp Res 3
+            gauge_status['Comp Res 3'] = (gauge_status_block[31] << 8) | gauge_status_block[30]
+
+        return gauge_status
 
     def get_da_status1(self):
         da_status_block = self.read_block_mac(DASTATUS1_CMD)
