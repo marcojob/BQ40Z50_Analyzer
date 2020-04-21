@@ -125,6 +125,10 @@ class BQ40Z50:
         gauge_status_1 = self.get_gauge_status1()
         self.add_to_battery_dict(gauge_status_1, "GaugeStatus1")
 
+        # Add gauge status 2
+        gauge_status_2 = self.get_gauge_status2()
+        self.add_to_battery_dict(gauge_status_1, "GaugeStatus2")
+
     def write_log(self, f, time_now):
         print(self.battery_dict)
 
@@ -314,6 +318,10 @@ class BQ40Z50:
         gauge_status_1 = self.get_gauge_status1()
         self.add_to_battery_dict(gauge_status_1, "GaugeStatus1")
 
+        # Add gauge status 2
+        gauge_status_2 = self.get_gauge_status2()
+        self.add_to_battery_dict(gauge_status_1, "GaugeStatus2")
+
     def add_to_battery_dict(self, result_dict: dict, topic_name: str):
         for key in result_dict.keys():
             field_name = topic_name + ": " + key
@@ -426,6 +434,81 @@ class BQ40Z50:
             serial_number["Serial Number 2"] = serial_number_block.tobytes().decode('utf-8').split(';')[1]
 
         return serial_number
+
+    def get_gauge_status2(self):
+        gauge_status_block = self.read_block_mac(GAUGINGSTATUS2_CMD)
+        gauge_status = dict()
+
+        if gauge_status_block:
+            # Active pack grid point, only valid during discharge
+            gauge_status['Pack grid'] = gauge_status_block[0]
+
+            # Learned status of resistance table
+            qmax_status = self.get_bit(gauge_status_block[1], 1) << 1 | self.get_bit(gauge_status_block[1], 0)
+            if qmax_status == 0:
+                gauge_status['QMax Status'] = 'Battery OK'
+            elif qmax_status == 1:
+                gauge_status['QMax Status'] = 'QMax first updated in learning cylce'
+            elif qmax_status == 2:
+                gauge_status['QMax Status'] = 'QMax and rtable updated in learning cylce'
+            else:
+                gauge_status['QMax Status'] = DEFAULT_NA
+
+            # IT enable
+            gauge_status['ITEN'] = self.get_bit(gauge_status_block[1], 2)
+
+            # QMax update in field
+            gauge_status['QMax upd. field'] = self.get_bit(gauge_status_block[1], 3)
+
+            # Cell grid 0
+            gauge_status['Cell grid 0'] = gauge_status_block[2]
+
+            # Cell grid 1
+            gauge_status['Cell grid 1'] = gauge_status_block[3]
+
+            # Cell grid 2
+            gauge_status['Cell grid 2'] = gauge_status_block[4]
+
+            # Cell grid 3
+            gauge_status['Cell grid 3'] = gauge_status_block[5]
+
+            # State time, time passed since last state change
+            gauge_status['State time'] = (gauge_status_block[6] << 8) | gauge_status_block[7]
+
+            # Depth of discharge cell 1
+            gauge_status['DOD0_0'] = (gauge_status_block[8] << 8) | gauge_status_block[9]
+
+            # Depth of discharge cell 2
+            gauge_status['DOD0_1'] = (gauge_status_block[10] << 8) | gauge_status_block[11]
+
+            # Depth of discharge cell 3
+            gauge_status['DOD0_2'] = (gauge_status_block[12] << 8) | gauge_status_block[13]
+
+            # Depth of discharge cell 4
+            gauge_status['DOD0_3'] = (gauge_status_block[14] << 8) | gauge_status_block[15]
+
+            # Passed capacity since last DOD0 update
+            gauge_status['DOD0 Q'] = (gauge_status_block[16] << 8) | gauge_status_block[17]
+
+            # Passed energy since last DOD0 update
+            gauge_status['DOD0 E'] = (gauge_status_block[18] << 8) | gauge_status_block[19]
+
+            # Passed time since last DOD0 update
+            gauge_status['DOD0 Time'] = (gauge_status_block[20] << 8) | gauge_status_block[21]
+
+            # Depth of discharge at end of charge cell 1
+            gauge_status['DODEOC 0'] = (gauge_status_block[22] << 8) | gauge_status_block[23]
+
+            # Depth of discharge at end of charge cell 2
+            gauge_status['DODEOC 1'] = (gauge_status_block[24] << 8) | gauge_status_block[25]
+
+            # Depth of discharge at end of charge cell 3
+            gauge_status['DODEOC 2'] = (gauge_status_block[26] << 8) | gauge_status_block[27]
+
+            # Depth of discharge at end of charge cell 4
+            gauge_status['DODEOC 3'] = (gauge_status_block[28] << 8) | gauge_status_block[29]
+
+        return gauge_status
 
     def get_gauge_status1(self):
         gauge_status_block = self.read_block_mac(GAUGINGSTATUS1_CMD)
