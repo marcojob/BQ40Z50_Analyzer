@@ -144,7 +144,7 @@ class BQ40Z50:
         for key in self.battery_dict.keys():
             f.write(str(self.battery_dict[key]) + ", ")
         f.write("\n")
-        self.logger.info(f"Log: {round(monotonic())}, Cell 1: {self.battery_dict['DAStatus1: Cell voltage 1']} mV, T: {self.battery_dict['Temperature: Temperature']}")
+        self.logger.info(f"Log: {self.get_time_ms()}, Cell 1: {self.battery_dict['DAStatus1: Cell voltage 1']} mV, T: {self.battery_dict['Temperature: Temperature']}")
 
     def get_soh(self):
         soh_dict = dict()
