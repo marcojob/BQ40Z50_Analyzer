@@ -69,6 +69,10 @@ class BQ40Z50:
         battery_status_dict = self.get_battery_status()
         self.add_to_battery_dict(battery_status_dict, "Battery Status")
 
+        # Add operation status
+        operation_status_dict = self.get_operation_status()
+        self.add_to_battery_dict(operation_status_dict, "Operation Status")
+
         # Add SOH
         soh_dict = self.get_soh()
         self.add_to_battery_dict(soh_dict, "SOH")
