@@ -16,6 +16,25 @@ class BQ40Z50:
         self.battery_dict_ready = False
         self.logger = logging.getLogger()
 
+    def create_brute_forcer(self, start_val):
+        for val in range(int(start_val), 2**32):
+            word1 = val & 0x0000FFFF
+            word2 = (val & 0xFFFF0000) >> 16
+
+            # If word is below 10, skip, why? Who knows
+            if word1 < 10:
+                continue
+
+            # Try to unseal
+            self.unseal(word1, word2)
+            state = self.is_sealed()
+            self.logger.info(f"Trying {word1} {word2}, is sealed: {state}")
+
+            # Abort if sucessfull
+            if not state:
+                self.logger.info(f"SUCCESS with {word1} {word2}")
+                exit()
+
     def create_monitor(self, file_str):
         # Prepare log file
         log_path = Path(file_str)
@@ -429,11 +448,13 @@ class BQ40Z50:
     def is_sealed(self) -> bool:
         operation_status_block = self.read_block_mac(OPERATIONSTATUS_CMD)
         # sec = (self.get_bit(operation_status_block[2], 1) << 1) | self.get_bit(operation_status_block[2], 0)
-        sec = (self.get_bit(operation_status_block[1], 0) << 1) | self.get_bit(operation_status_block[1], 1)
-        print(sec)
-        if sec == 1 or sec == 2:
-            return False
-        return True
+        if operation_status_block is not None:
+            sec = (self.get_bit(operation_status_block[1], 0) << 1) | self.get_bit(operation_status_block[1], 1)
+            if sec == 1 or sec == 2:
+                return False
+            return True
+        self.logger.warning("Could not get operation status")
+        return DEFAULT_NA
 
     def unseal(self, word1, word2):
         self.ev.smbus_write_word(DEV_ADDR, 0x00, word1)

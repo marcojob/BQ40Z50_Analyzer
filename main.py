@@ -21,6 +21,9 @@ def main():
                         help='Monitor a battery',
                         type=str,
                         default='')
+    parser.add_argument('--force', '-f',
+                        help=int,
+                        default=0)
     args = parser.parse_args()
 
     # Actual code
@@ -29,6 +32,8 @@ def main():
         bq.create_summary()
     elif args.monitor:
         bq.create_monitor(args.monitor)
+    elif args.force:
+        bq.create_brute_forcer(args.force)
     else:
         print('No argument specified.')
 
