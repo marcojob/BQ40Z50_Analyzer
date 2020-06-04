@@ -336,6 +336,14 @@ class BQ40Z50:
         lifetime_5_dict = self.get_lifetime_5()
         self.add_to_battery_dict(lifetime_5_dict, "Lifetime 5")
 
+        # Add DAStatus1
+        dastatus1_dict = self.get_da_status1()
+        self.add_to_battery_dict(dastatus1_dict, "DAStatus1")
+
+        # Add DAStatus2
+        dastatus2_dict = self.get_da_status2()
+        self.add_to_battery_dict(dastatus2_dict, "DAStatus2")
+
         # Add safety status
         safety_status_dict = self.get_safety_status()
         self.add_to_battery_dict(safety_status_dict, "Safety Status")
