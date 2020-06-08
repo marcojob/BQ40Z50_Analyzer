@@ -457,7 +457,7 @@ class BQ40Z50:
         operation_status_block = self.read_block_mac(OPERATIONSTATUS_CMD)
         # sec = (self.get_bit(operation_status_block[2], 1) << 1) | self.get_bit(operation_status_block[2], 0)
         if operation_status_block is not None:
-            sec = (self.get_bit(operation_status_block[1], 0) << 1) | self.get_bit(operation_status_block[1], 1)
+            sec = (self.get_bit(operation_status_block[1], 1) << 1) | self.get_bit(operation_status_block[1], 0)
             if sec == 1 or sec == 2:
                 return False
             return True
@@ -756,19 +756,19 @@ class BQ40Z50:
 
         if gauging_status_block:
             # Open circuit voltage in flat region during relax
-            gauging_status['OCVFR'] = self.get_bit(gauging_status_block[0], 4)
+            gauging_status['OCVFR'] = self.get_bit(gauging_status_block[2], 4)
 
             # LOAD MODE
-            gauging_status['LDMD'] = self.get_bit(gauging_status_block[0], 3)
+            gauging_status['LDMD'] = self.get_bit(gauging_status_block[2], 3)
 
             # resistance update
-            gauging_status['RX'] = self.get_bit(gauging_status_block[0], 2)
+            gauging_status['RX'] = self.get_bit(gauging_status_block[2], 2)
 
             # qmax update
-            gauging_status['QMax'] = self.get_bit(gauging_status_block[0], 1)
+            gauging_status['QMax'] = self.get_bit(gauging_status_block[2], 1)
 
             # Discharge qualified for learning
-            gauging_status['VDQ'] = self.get_bit(gauging_status_block[0], 0)
+            gauging_status['VDQ'] = self.get_bit(gauging_status_block[2], 0)
 
             # Negative scale factor mode
             gauging_status['NSFM'] = self.get_bit(gauging_status_block[1], 7)
@@ -786,31 +786,31 @@ class BQ40Z50:
             gauging_status['R_DIS'] = self.get_bit(gauging_status_block[1], 2)
 
             # Rest, 1: OCV Reading taken, 0: OCV Reading not taken or not in relax
-            gauging_status['REST'] = self.get_bit(gauging_status_block[1], 1)
+            gauging_status['REST'] = self.get_bit(gauging_status_block[1], 0)
 
             # Condition flag, 1: MaxError > Max Error Limit, 0: <
-            gauging_status['CF'] = self.get_bit(gauging_status_block[2], 7)
+            gauging_status['CF'] = self.get_bit(gauging_status_block[0], 7)
 
             # Discharge / relax
-            gauging_status['DSG'] = self.get_bit(gauging_status_block[2], 6)
+            gauging_status['DSG'] = self.get_bit(gauging_status_block[0], 6)
 
             # End of discharge termination voltage
-            gauging_status['EDV'] = self.get_bit(gauging_status_block[2], 5)
+            gauging_status['EDV'] = self.get_bit(gauging_status_block[0], 5)
 
             # Cell balancing
-            gauging_status['BAL_EN'] = self.get_bit(gauging_status_block[2], 4)
+            gauging_status['BAL_EN'] = self.get_bit(gauging_status_block[0], 4)
 
             # Terminate charge
-            gauging_status['TC'] = self.get_bit(gauging_status_block[2], 3)
+            gauging_status['TC'] = self.get_bit(gauging_status_block[0], 3)
 
             # Terminate discharge
-            gauging_status['TD'] = self.get_bit(gauging_status_block[2], 2)
+            gauging_status['TD'] = self.get_bit(gauging_status_block[0], 2)
 
             # Fully charged
-            gauging_status['FC'] = self.get_bit(gauging_status_block[2], 1)
+            gauging_status['FC'] = self.get_bit(gauging_status_block[0], 1)
 
             # Fully discharged
-            gauging_status['FD'] = self.get_bit(gauging_status_block[2], 0)
+            gauging_status['FD'] = self.get_bit(gauging_status_block[0], 0)
 
         return gauging_status
 
@@ -821,82 +821,73 @@ class BQ40Z50:
 
         if pf_alert_block:
             # Open Thermistor TS4 Failure
-            pf_alert['TS4'] = self.get_bit(pf_alert_block[0], 7)
+            pf_alert['TS4'] = self.get_bit(pf_alert_block[3], 7)
 
             # Open Thermistor TS3 Failure
-            pf_alert['TS3'] = self.get_bit(pf_alert_block[0], 6)
+            pf_alert['TS3'] = self.get_bit(pf_alert_block[3], 6)
 
             # Open Thermistor TS2 Failure
-            pf_alert['TS2'] = self.get_bit(pf_alert_block[0], 5)
+            pf_alert['TS2'] = self.get_bit(pf_alert_block[3], 5)
 
             # Open Thermistor TS1 Failure
-            pf_alert['TS1'] = self.get_bit(pf_alert_block[0], 4)
-
-            # Data flash wearout failure
-            pf_alert['DFW'] = self.get_bit(pf_alert_block[0], 2)
+            pf_alert['TS1'] = self.get_bit(pf_alert_block[3], 4)
 
             # Open cell tab connection failure
             pf_alert['OPNCELL'] = self.get_bit(pf_alert_block[0], 1)
 
-            # Instruction flash checksum failure
-            pf_alert['IFC'] = self.get_bit(pf_alert_block[0], 0)
-
-            # PTC failure
-            pf_alert['PTC'] = self.get_bit(pf_alert_block[1], 7)
-
             # Second level protector failure
-            pf_alert['2LVL'] = self.get_bit(pf_alert_block[1], 6)
+            pf_alert['2LVL'] = self.get_bit(pf_alert_block[2], 6)
 
             # AFE communication failure
-            pf_alert['AFEC'] = self.get_bit(pf_alert_block[1], 5)
+            pf_alert['AFEC'] = self.get_bit(pf_alert_block[2], 5)
 
             # AFE register failure
-            pf_alert['AFER'] = self.get_bit(pf_alert_block[1], 4)
+            pf_alert['AFER'] = self.get_bit(pf_alert_block[2], 4)
 
             # Chemical fuse failure
-            pf_alert['FUSE'] = self.get_bit(pf_alert_block[1], 3)
+            pf_alert['FUSE'] = self.get_bit(pf_alert_block[2], 3)
 
             # Disharge FET failure
-            pf_alert['DFETF'] = self.get_bit(pf_alert_block[1], 1)
+            pf_alert['DFETF'] = self.get_bit(pf_alert_block[2], 1)
 
             # Charge FET failure
-            pf_alert['CFETF'] = self.get_bit(pf_alert_block[1], 0)
+            pf_alert['CFETF'] = self.get_bit(pf_alert_block[2], 0)
 
             # Voltage imbalance while pack is active failure
-            pf_alert['VIMA'] = self.get_bit(pf_alert_block[2], 4)
+            pf_alert['VIMA'] = self.get_bit(pf_alert_block[1], 4)
 
             # Voltage imbalance while pack is at rest failure
-            pf_alert['VIMR'] = self.get_bit(pf_alert_block[2], 3)
+            pf_alert['VIMR'] = self.get_bit(pf_alert_block[1], 3)
 
             # Capacity degradation failure
-            pf_alert['CD'] = self.get_bit(pf_alert_block[2], 2)
+            pf_alert['CD'] = self.get_bit(pf_alert_block[1], 2)
 
             # Impedance failure
-            pf_alert['IMP'] = self.get_bit(pf_alert_block[2], 1)
+            pf_alert['IMP'] = self.get_bit(pf_alert_block[1], 1)
 
             # Cell balancing failure
-            pf_alert['CB'] = self.get_bit(pf_alert_block[2], 0)
+            pf_alert['CB'] = self.get_bit(pf_alert_block[1], 0)
 
             # QMax imbalance failure
-            pf_alert['QIM'] = self.get_bit(pf_alert_block[3], 7)
+            pf_alert['QIM'] = self.get_bit(pf_alert_block[0], 7)
 
             # Safety overtemperature FET failure
-            pf_alert['SOTF'] = self.get_bit(pf_alert_block[3], 6)
+            pf_alert['SOTF'] = self.get_bit(pf_alert_block[0], 6)
 
             # Safety overtemperature cell failure
-            pf_alert['SOT'] = self.get_bit(pf_alert_block[3], 4)
+            pf_alert['SOT'] = self.get_bit(pf_alert_block[0], 4)
 
             # Safety over current in discharge
-            pf_alert['SOCD'] = self.get_bit(pf_alert_block[3], 3)
+            pf_alert['SOCD'] = self.get_bit(pf_alert_block[0], 3)
 
             # Safety overrcurrent in charge
-            pf_alert['SOCC'] = self.get_bit(pf_alert_block[3], 2)
+            pf_alert['SOCC'] = self.get_bit(pf_alert_block[0], 2)
 
             # Safety cell overvoltage failure
-            pf_alert['SOV'] = self.get_bit(pf_alert_block[3], 1)
+            pf_alert['SOV'] = self.get_bit(pf_alert_block[0], 1)
 
             # Safety cell undervoltage failure
-            pf_alert['SUV'] = self.get_bit(pf_alert_block[3], 0)
+            pf_alert['SUV'] = self.get_bit(pf_alert_block[0], 0)
 
         return pf_alert
 
@@ -906,82 +897,82 @@ class BQ40Z50:
 
         if pf_status_block:
             # Open Thermistor TS4 Failure
-            pf_status['TS4'] = self.get_bit(pf_status_block[0], 7)
+            pf_status['TS4'] = self.get_bit(pf_status_block[3], 7)
 
             # Open Thermistor TS3 Failure
-            pf_status['TS3'] = self.get_bit(pf_status_block[0], 6)
+            pf_status['TS3'] = self.get_bit(pf_status_block[3], 6)
 
             # Open Thermistor TS2 Failure
-            pf_status['TS2'] = self.get_bit(pf_status_block[0], 5)
+            pf_status['TS2'] = self.get_bit(pf_status_block[3], 5)
 
             # Open Thermistor TS1 Failure
-            pf_status['TS1'] = self.get_bit(pf_status_block[0], 4)
+            pf_status['TS1'] = self.get_bit(pf_status_block[3], 4)
 
             # Data flash wearout failure
-            pf_status['DFW'] = self.get_bit(pf_status_block[0], 2)
+            pf_status['DFW'] = self.get_bit(pf_status_block[3], 2)
 
             # Open cell tab connection failure
-            pf_status['OPNCELL'] = self.get_bit(pf_status_block[0], 1)
+            pf_status['OPNCELL'] = self.get_bit(pf_status_block[3], 1)
 
             # Instruction flash checksum failure
-            pf_status['IFC'] = self.get_bit(pf_status_block[0], 0)
+            pf_status['IFC'] = self.get_bit(pf_status_block[3], 0)
 
             # PTC failure
-            pf_status['PTC'] = self.get_bit(pf_status_block[1], 7)
+            pf_status['PTC'] = self.get_bit(pf_status_block[2], 7)
 
             # Second level protector failure
-            pf_status['2LVL'] = self.get_bit(pf_status_block[1], 6)
+            pf_status['2LVL'] = self.get_bit(pf_status_block[2], 6)
 
             # AFE communication failure
-            pf_status['AFEC'] = self.get_bit(pf_status_block[1], 5)
+            pf_status['AFEC'] = self.get_bit(pf_status_block[2], 5)
 
             # AFE register failure
-            pf_status['AFER'] = self.get_bit(pf_status_block[1], 4)
+            pf_status['AFER'] = self.get_bit(pf_status_block[2], 4)
 
             # Chemical fuse failure
-            pf_status['FUSE'] = self.get_bit(pf_status_block[1], 3)
+            pf_status['FUSE'] = self.get_bit(pf_status_block[2], 3)
 
             # Disharge FET failure
-            pf_status['DFETF'] = self.get_bit(pf_status_block[1], 1)
+            pf_status['DFETF'] = self.get_bit(pf_status_block[2], 1)
 
             # Charge FET failure
-            pf_status['CFETF'] = self.get_bit(pf_status_block[1], 0)
+            pf_status['CFETF'] = self.get_bit(pf_status_block[2], 0)
 
             # Voltage imbalance while pack is active failure
-            pf_status['VIMA'] = self.get_bit(pf_status_block[2], 4)
+            pf_status['VIMA'] = self.get_bit(pf_status_block[1], 4)
 
             # Voltage imbalance while pack is at rest failure
-            pf_status['VIMR'] = self.get_bit(pf_status_block[2], 3)
+            pf_status['VIMR'] = self.get_bit(pf_status_block[1], 3)
 
             # Capacity degradation failure
-            pf_status['CD'] = self.get_bit(pf_status_block[2], 2)
+            pf_status['CD'] = self.get_bit(pf_status_block[1], 2)
 
             # Impedance failure
-            pf_status['IMP'] = self.get_bit(pf_status_block[2], 1)
+            pf_status['IMP'] = self.get_bit(pf_status_block[1], 1)
 
             # Cell balancing failure
-            pf_status['CB'] = self.get_bit(pf_status_block[2], 0)
+            pf_status['CB'] = self.get_bit(pf_status_block[1], 0)
 
             # QMax imbalance failure
-            pf_status['QIM'] = self.get_bit(pf_status_block[3], 7)
+            pf_status['QIM'] = self.get_bit(pf_status_block[0], 7)
 
             # Safety overtemperature FET failure
-            pf_status['SOTF'] = self.get_bit(pf_status_block[3], 6)
+            pf_status['SOTF'] = self.get_bit(pf_status_block[0], 6)
 
             # Safety overtemperature cell failure
-            pf_status['SOT'] = self.get_bit(pf_status_block[3], 4)
+            pf_status['SOT'] = self.get_bit(pf_status_block[0], 4)
 
             # Safety over current in discharge
-            pf_status['SOCD'] = self.get_bit(pf_status_block[3], 3)
+            pf_status['SOCD'] = self.get_bit(pf_status_block[0], 3)
 
             # Safety overrcurrent in charge
-            pf_status['SOCC'] = self.get_bit(pf_status_block[3], 2)
+            pf_status['SOCC'] = self.get_bit(pf_status_block[0], 2)
 
             # Safety cell overvoltage failure
-            pf_status['SOV'] = self.get_bit(pf_status_block[3], 1)
+            pf_status['SOV'] = self.get_bit(pf_status_block[0], 1)
 
             # Safety cell undervoltage failure
-            pf_status['SUV'] = self.get_bit(pf_status_block[3], 0)
+            pf_status['SUV'] = self.get_bit(pf_status_block[0], 0)
 
         return pf_status
 
@@ -991,66 +982,66 @@ class BQ40Z50:
 
         if operation_status_block:
             # Emergency FET shutdown
-            operation_status['EMSHUT'] = self.get_bit(operation_status_block[0], 5)
+            operation_status['EMSHUT'] = self.get_bit(operation_status_block[3], 5)
 
             # Cell balancing status
-            operation_status['CB'] = self.get_bit(operation_status_block[0], 4)
+            operation_status['CB'] = self.get_bit(operation_status_block[3], 4)
 
             # CC measurements in SLEEP
-            operation_status['SLPCC'] = self.get_bit(operation_status_block[0], 3)
+            operation_status['SLPCC'] = self.get_bit(operation_status_block[3], 3)
 
             # ADC measurements in SLEEP
-            operation_status['SLPAD'] = self.get_bit(operation_status_block[0], 2)
+            operation_status['SLPAD'] = self.get_bit(operation_status_block[3], 2)
 
             # Auto CC calibration
-            operation_status['SMBLCAL'] = self.get_bit(operation_status_block[0], 1)
+            operation_status['SMBLCAL'] = self.get_bit(operation_status_block[3], 1)
 
             # Initialization after full reset
-            operation_status['INIT'] = self.get_bit(operation_status_block[0], 0)
+            operation_status['INIT'] = self.get_bit(operation_status_block[3], 0)
 
             # SLEEP mode triggered via command
-            operation_status['SLEEPM'] = self.get_bit(operation_status_block[1], 7)
+            operation_status['SLEEPM'] = self.get_bit(operation_status_block[2], 7)
 
             # 400 kHz SMBUS mode
-            operation_status['XL'] = self.get_bit(operation_status_block[1], 6)
+            operation_status['XL'] = self.get_bit(operation_status_block[2], 6)
 
             # Calibration Output
-            operation_status['CAL_OFFSET'] = self.get_bit(operation_status_block[1], 5)
+            operation_status['CAL_OFFSET'] = self.get_bit(operation_status_block[2], 5)
 
             # Calibration Output
-            operation_status['CAL'] = self.get_bit(operation_status_block[1], 4)
+            operation_status['CAL'] = self.get_bit(operation_status_block[2], 4)
 
             # Auto CC Offset Calibration
-            operation_status['AUTOCALM'] = self.get_bit(operation_status_block[1], 3)
+            operation_status['AUTOCALM'] = self.get_bit(operation_status_block[2], 3)
 
             # Authentication in progress
-            operation_status['AUTH'] = self.get_bit(operation_status_block[1], 2)
+            operation_status['AUTH'] = self.get_bit(operation_status_block[2], 2)
 
             # LED display
-            operation_status['LED'] = self.get_bit(operation_status_block[1], 1)
+            operation_status['LED'] = self.get_bit(operation_status_block[2], 1)
 
             # Shutdown triggered via command
-            operation_status['SDM'] = self.get_bit(operation_status_block[1], 0)
+            operation_status['SDM'] = self.get_bit(operation_status_block[2], 0)
 
             # SLEEP conditions met
-            operation_status['SLEEP'] = self.get_bit(operation_status_block[2], 7)
+            operation_status['SLEEP'] = self.get_bit(operation_status_block[1], 7)
 
             # Charging disabled
-            operation_status['XCHG'] = self.get_bit(operation_status_block[2], 6)
+            operation_status['XCHG'] = self.get_bit(operation_status_block[1], 6)
 
             # Discharging disabled
-            operation_status['XDSG'] = self.get_bit(operation_status_block[2], 5)
+            operation_status['XDSG'] = self.get_bit(operation_status_block[1], 5)
 
             # PERMANENT FAILURE mode status
-            operation_status['PF'] = self.get_bit(operation_status_block[2], 4)
+            operation_status['PF'] = self.get_bit(operation_status_block[1], 4)
 
             # SAFETY status
-            operation_status['SS'] = self.get_bit(operation_status_block[2], 3)
+            operation_status['SS'] = self.get_bit(operation_status_block[1], 3)
 
             # Shutdown triggered via low pack voltage
-            operation_status['SDV'] = self.get_bit(operation_status_block[2], 2)
+            operation_status['SDV'] = self.get_bit(operation_status_block[1], 2)
 
-            sec = (self.get_bit(operation_status_block[2], 1) << 1) | self.get_bit(operation_status_block[2], 0)
+            sec = (self.get_bit(operation_status_block[1], 1) << 1) | self.get_bit(operation_status_block[1], 0)
             if sec == 0:
                 operation_status['SEC'] = 'Reserved'
             elif sec == 1:
@@ -1061,22 +1052,22 @@ class BQ40Z50:
                 operation_status['SEC'] = 'Sealed'
 
             # Battery Trip Point Interrupt
-            operation_status['BTP_INT'] = self.get_bit(operation_status_block[3], 7)
+            operation_status['BTP_INT'] = self.get_bit(operation_status_block[0], 7)
 
             # Fuse status
-            operation_status['FUSE'] = self.get_bit(operation_status_block[3], 5)
+            operation_status['FUSE'] = self.get_bit(operation_status_block[0], 5)
 
             # Precharge FET Status
-            operation_status['PCHG'] = self.get_bit(operation_status_block[3], 3)
+            operation_status['PCHG'] = self.get_bit(operation_status_block[0], 3)
 
             # CHG FET status
-            operation_status['CHG'] = self.get_bit(operation_status_block[3], 2)
+            operation_status['CHG'] = self.get_bit(operation_status_block[0], 2)
 
             # DSG FET status
-            operation_status['DSG'] = self.get_bit(operation_status_block[3], 1)
+            operation_status['DSG'] = self.get_bit(operation_status_block[0], 1)
 
             # Syste present low
-            operation_status['PRES'] = self.get_bit(operation_status_block[3], 0)
+            operation_status['PRES'] = self.get_bit(operation_status_block[0], 0)
 
         return operation_status
 
@@ -1116,7 +1107,7 @@ class BQ40Z50:
             battery_status['FD'] = self.get_bit(battery_status_word, 4)
 
             if battery_status_word is not DEFAULT_NA:
-                status = battery_status_word & 0b111
+                status = battery_status_word & 0b0000000000001111
 
                 if status == 0:
                     battery_status['status'] = 'OK'
@@ -1130,6 +1121,12 @@ class BQ40Z50:
                     battery_status['status'] = 'access denied'
                 elif status == 5:
                     battery_status['status'] = 'overflow/underflow'
+                elif status == 6:
+                    battery_status['status'] = 'bad size'
+                elif status == 7:
+                    battery_status['status'] = 'unknwon error'
+                else:
+                    battery_status['status'] = DEFAULT_NA
             else:
                 battery_status['status'] = DEFAULT_NA
 
@@ -1141,76 +1138,73 @@ class BQ40Z50:
 
         if safety_alert_block:
             # Undertemperature during Discharge
-            safety_alert['UTD'] = self.get_bit(safety_alert_block[0], 3)
+            safety_alert['UTD'] = self.get_bit(safety_alert_block[3], 3)
 
             # Undertemperature during Charge
-            safety_alert['UTC'] = self.get_bit(safety_alert_block[0], 2)
+            safety_alert['UTC'] = self.get_bit(safety_alert_block[3], 2)
 
             # Over-Precharge Current
-            safety_alert['PCHGC'] = self.get_bit(safety_alert_block[0], 1)
+            safety_alert['PCHGC'] = self.get_bit(safety_alert_block[3], 1)
 
             # Overcharging voltage
-            safety_alert['CHGV'] = self.get_bit(safety_alert_block[0], 0)
+            safety_alert['CHGV'] = self.get_bit(safety_alert_block[3], 0)
 
             # Overcharging current
-            safety_alert['CHGC'] = self.get_bit(safety_alert_block[1], 7)
+            safety_alert['CHGC'] = self.get_bit(safety_alert_block[2], 7)
 
             # Overcharge
-            safety_alert['OC'] = self.get_bit(safety_alert_block[1], 6)
+            safety_alert['OC'] = self.get_bit(safety_alert_block[2], 6)
+
+            # Charge timeout suspend
+            safety_alert['CTOS'] = self.get_bit(safety_alert_block[2], 5)
 
             # Charge Timeout
-            safety_alert['CTO'] = self.get_bit(safety_alert_block[1], 4)
+            safety_alert['CTO'] = self.get_bit(safety_alert_block[2], 4)
+
+            # Precharge Timeout Suspend
+            safety_alert['PTOS'] = self.get_bit(safety_alert_block[2], 3)
 
             # Precharge Timeout
-            safety_alert['PTO'] = self.get_bit(safety_alert_block[1], 2)
+            safety_alert['PTO'] = self.get_bit(safety_alert_block[2], 2)
 
             # Overtemperature FET
-            safety_alert['OTF'] = self.get_bit(safety_alert_block[1], 0)
+            safety_alert['OTF'] = self.get_bit(safety_alert_block[2], 0)
 
             # Cell Undervoltage Compensated
-            safety_alert['CUVC'] = self.get_bit(safety_alert_block[2], 6)
+            safety_alert['CUVC'] = self.get_bit(safety_alert_block[1], 6)
 
             # Overtemperature during discharge
-            safety_alert['OTD'] = self.get_bit(safety_alert_block[2], 5)
+            safety_alert['OTD'] = self.get_bit(safety_alert_block[1], 5)
 
             # Overtemperature during charge
-            safety_alert['OTC'] = self.get_bit(safety_alert_block[2], 4)
+            safety_alert['OTC'] = self.get_bit(safety_alert_block[1], 4)
 
             # Short-circuit during discharge latch
-            safety_alert['ASCDL'] = self.get_bit(safety_alert_block[2], 3)
-
-            # Short-circuit during discharge
-            safety_alert['ASCD'] = self.get_bit(safety_alert_block[2], 2)
+            safety_alert['ASCDL'] = self.get_bit(safety_alert_block[1], 3)
 
             # Short-circuit during during charge latch
-            safety_alert['ASCCL'] = self.get_bit(safety_alert_block[2], 1)
-
-            # Short-circuit during charge
-            safety_alert['ASCC'] = self.get_bit(safety_alert_block[2], 0)
+            safety_alert['ASCCL'] = self.get_bit(safety_alert_block[1], 1)
 
             # Overload during discharge latch
-            safety_alert['AOLDL'] = self.get_bit(safety_alert_block[3], 7)
-
-            # Overload during discharge
-            safety_alert['AOLD'] = self.get_bit(safety_alert_block[3], 6)
+            safety_alert['AOLDL'] = self.get_bit(safety_alert_block[0], 7)
 
             # Overcurrent during discharge 2
-            safety_alert['OCD2'] = self.get_bit(safety_alert_block[3], 5)
+            safety_alert['OCD2'] = self.get_bit(safety_alert_block[0], 5)
 
             # Overcurrent during discharge 1
-            safety_alert['OCD1'] = self.get_bit(safety_alert_block[3], 4)
+            safety_alert['OCD1'] = self.get_bit(safety_alert_block[0], 4)
 
             # Overcurrent during charge 2
-            safety_alert['OCC2'] = self.get_bit(safety_alert_block[3], 3)
+            safety_alert['OCC2'] = self.get_bit(safety_alert_block[0], 3)
 
             # Overcurrent during charge 1
-            safety_alert['OCC1'] = self.get_bit(safety_alert_block[3], 2)
+            safety_alert['OCC1'] = self.get_bit(safety_alert_block[0], 2)
 
             # Cell overvoltage
-            safety_alert['COV'] = self.get_bit(safety_alert_block[3], 1)
+            safety_alert['COV'] = self.get_bit(safety_alert_block[0], 1)
 
             # Cell undervoltage
-            safety_alert['CUV'] = self.get_bit(safety_alert_block[3], 0)
+            safety_alert['CUV'] = self.get_bit(safety_alert_block[0], 0)
 
         return safety_alert
 
@@ -1221,76 +1215,76 @@ class BQ40Z50:
 
         if safety_status_block:
             # Undertemperature during Discharge
-            safety_status['UTD'] = self.get_bit(safety_status_block[0], 3)
+            safety_status['UTD'] = self.get_bit(safety_status_block[3], 3)
 
             # Undertemperature during Charge
-            safety_status['UTC'] = self.get_bit(safety_status_block[0], 2)
+            safety_status['UTC'] = self.get_bit(safety_status_block[3], 2)
 
             # Over-Precharge Current
-            safety_status['PCHGC'] = self.get_bit(safety_status_block[0], 1)
+            safety_status['PCHGC'] = self.get_bit(safety_status_block[3], 1)
 
             # Overcharging voltage
-            safety_status['CHGV'] = self.get_bit(safety_status_block[0], 0)
+            safety_status['CHGV'] = self.get_bit(safety_status_block[3], 0)
 
             # Overcharging current
-            safety_status['CHGC'] = self.get_bit(safety_status_block[1], 7)
+            safety_status['CHGC'] = self.get_bit(safety_status_block[2], 7)
 
             # Overcharge
-            safety_status['OC'] = self.get_bit(safety_status_block[1], 6)
+            safety_status['OC'] = self.get_bit(safety_status_block[2], 6)
 
             # Charge Timeout
-            safety_status['CTO'] = self.get_bit(safety_status_block[1], 4)
+            safety_status['CTO'] = self.get_bit(safety_status_block[2], 4)
 
             # Precharge Timeout
-            safety_status['PTO'] = self.get_bit(safety_status_block[1], 2)
+            safety_status['PTO'] = self.get_bit(safety_status_block[2], 2)
 
             # Overtemperature FET
-            safety_status['OTF'] = self.get_bit(safety_status_block[1], 0)
+            safety_status['OTF'] = self.get_bit(safety_status_block[2], 0)
 
             # Cell Undervoltage Compensated
-            safety_status['CUVC'] = self.get_bit(safety_status_block[2], 6)
+            safety_status['CUVC'] = self.get_bit(safety_status_block[1], 6)
 
             # Overtemperature during discharge
-            safety_status['OTD'] = self.get_bit(safety_status_block[2], 5)
+            safety_status['OTD'] = self.get_bit(safety_status_block[1], 5)
 
             # Overtemperature during charge
-            safety_status['OTC'] = self.get_bit(safety_status_block[2], 4)
+            safety_status['OTC'] = self.get_bit(safety_status_block[1], 4)
 
             # Short-circuit during discharge latch
-            safety_status['ASCDL'] = self.get_bit(safety_status_block[2], 3)
+            safety_status['ASCDL'] = self.get_bit(safety_status_block[1], 3)
 
             # Short-circuit during discharge
-            safety_status['ASCD'] = self.get_bit(safety_status_block[2], 2)
+            safety_status['ASCD'] = self.get_bit(safety_status_block[1], 2)
 
             # Short-circuit during during charge latch
-            safety_status['ASCCL'] = self.get_bit(safety_status_block[2], 1)
+            safety_status['ASCCL'] = self.get_bit(safety_status_block[1], 1)
 
             # Short-circuit during charge
-            safety_status['ASCC'] = self.get_bit(safety_status_block[2], 0)
+            safety_status['ASCC'] = self.get_bit(safety_status_block[1], 0)
 
             # Overload during discharge latch
-            safety_status['AOLDL'] = self.get_bit(safety_status_block[3], 7)
+            safety_status['AOLDL'] = self.get_bit(safety_status_block[0], 7)
 
             # Overload during discharge
-            safety_status['AOLD'] = self.get_bit(safety_status_block[3], 6)
+            safety_status['AOLD'] = self.get_bit(safety_status_block[0], 6)
 
             # Overcurrent during discharge 2
-            safety_status['OCD2'] = self.get_bit(safety_status_block[3], 5)
+            safety_status['OCD2'] = self.get_bit(safety_status_block[0], 5)
 
             # Overcurrent during discharge 1
-            safety_status['OCD1'] = self.get_bit(safety_status_block[3], 4)
+            safety_status['OCD1'] = self.get_bit(safety_status_block[0], 4)
 
             # Overcurrent during charge 2
-            safety_status['OCC2'] = self.get_bit(safety_status_block[3], 3)
+            safety_status['OCC2'] = self.get_bit(safety_status_block[0], 3)
 
             # Overcurrent during charge 1
-            safety_status['OCC1'] = self.get_bit(safety_status_block[3], 2)
+            safety_status['OCC1'] = self.get_bit(safety_status_block[0], 2)
 
             # Cell overvoltage
-            safety_status['COV'] = self.get_bit(safety_status_block[3], 1)
+            safety_status['COV'] = self.get_bit(safety_status_block[0], 1)
 
             # Cell undervoltage
-            safety_status['CUV'] = self.get_bit(safety_status_block[3], 0)
+            safety_status['CUV'] = self.get_bit(safety_status_block[0], 0)
 
         return safety_status
 
