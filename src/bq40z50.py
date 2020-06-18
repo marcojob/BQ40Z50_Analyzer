@@ -172,7 +172,9 @@ class BQ40Z50:
                         f"Cell 2: {self.battery_dict['DAStatus1: Cell voltage 2']} mV, " +
                         f"Cell 3: {self.battery_dict['DAStatus1: Cell voltage 3']} mV, " +
                         f"Cell 4: {self.battery_dict['DAStatus1: Cell voltage 4']} mV, " +
-                        f"T: {self.battery_dict['Temperature: Temperature']}")
+                        f"T: {self.battery_dict['Temperature: Temperature']}, " +
+                        f"SOH: {self.battery_dict['SOH: SOH']}, " + 
+                        f"Cycle count: {self.get_cycle_count()}")
 
     def get_soh(self):
         soh_dict = dict()
@@ -474,6 +476,8 @@ class BQ40Z50:
 
         if cycle_count_word:
             cycle_count["Cycle count"] = cycle_count_word
+        else:
+            cycle_count["Cycle count"] = DEFAULT_NA
         return cycle_count
 
     def get_soh(self) -> dict:
