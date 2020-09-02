@@ -297,13 +297,16 @@ class BQ40Z50:
 
 
     def prepare_csv(self):
-        f = open(DATA_FILE, "r")
-        file_content = f.readlines()
-        f.close()
+        data_file = Path(DATA_FILE)
+        if not data_file.exists():
+            data_file.touch()
 
-        if not len(file_content) == 0:
-            self.battery_dict_ready = True
-            self.HEADER_LEN = len(file_content[0].split(", ")) - 1
+        with data_file.open() as f:
+            file_content = f.readlines()
+
+            if not len(file_content) == 0:
+                self.battery_dict_ready = True
+                self.HEADER_LEN = len(file_content[0].split(", ")) - 1
 
     def get_summary(self):
         # Add serial number
