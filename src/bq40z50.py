@@ -167,14 +167,19 @@ class BQ40Z50:
         for key in self.battery_dict.keys():
             f.write(str(self.battery_dict[key]) + ", ")
         f.write("\n")
+        cc = self.get_cycle_count()
         self.logger.info(f"Log: {self.get_time_ms()}, " +
                         f"Cell 1: {self.battery_dict['DAStatus1: Cell voltage 1']} mV, " +
                         f"Cell 2: {self.battery_dict['DAStatus1: Cell voltage 2']} mV, " +
                         f"Cell 3: {self.battery_dict['DAStatus1: Cell voltage 3']} mV, " +
                         f"Cell 4: {self.battery_dict['DAStatus1: Cell voltage 4']} mV, " +
                         f"T: {self.battery_dict['Temperature: Temperature']}, " +
+                        f"T1: {self.battery_dict.get('DAStatus2: TS1 temperature', 'N/A')}, " +
+                        f"T2: {self.battery_dict.get('DAStatus2: TS2 temperature', 'N/A')}, " +
+                        f"T3: {self.battery_dict.get('DAStatus2: TS3 temperature', 'N/A')}, " +
+                        f"T4: {self.battery_dict.get('DAStatus2: TS4 temperature', 'N/A')}, " +
                         f"SOH: {self.battery_dict['SOH: SOH']}, " + 
-                        f"Cycle count: {self.get_cycle_count()}")
+                        f"Cycle count: {cc.get('Cycle count')}")
 
     def get_soh(self):
         soh_dict = dict()
