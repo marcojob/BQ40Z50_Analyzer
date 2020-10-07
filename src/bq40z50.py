@@ -173,11 +173,13 @@ class BQ40Z50:
                         f"Cell 2: {self.battery_dict['DAStatus1: Cell voltage 2']} mV, " +
                         f"Cell 3: {self.battery_dict['DAStatus1: Cell voltage 3']} mV, " +
                         f"Cell 4: {self.battery_dict['DAStatus1: Cell voltage 4']} mV, " +
-                        f"T: {self.battery_dict['Temperature: Temperature']}, " +
-                        f"T1: {self.battery_dict.get('DAStatus2: TS1 temperature', 'N/A')}, " +
-                        f"T2: {self.battery_dict.get('DAStatus2: TS2 temperature', 'N/A')}, " +
-                        f"T3: {self.battery_dict.get('DAStatus2: TS3 temperature', 'N/A')}, " +
-                        f"T4: {self.battery_dict.get('DAStatus2: TS4 temperature', 'N/A')}, " +
+                        f"T: {round(self.battery_dict.get('Temperature: Temperature', 0.0),2)}, " +
+                        f"T1: {round(self.battery_dict.get('DAStatus2: TS1 temperature', 0.0),2)}, " +
+                        f"T2: {round(self.battery_dict.get('DAStatus2: TS2 temperature', 0.0),2)}, " +
+                        f"T3: {round(self.battery_dict.get('DAStatus2: TS3 temperature', 0.0),2)}, " +
+                        f"T4: {round(self.battery_dict.get('DAStatus2: TS4 temperature', 0.0),2)}, " +
+                        f"Int: {round(self.battery_dict.get('DAStatus2: Int temperature', 0.0),2)}, " +
+                        f"Cell: {round(self.battery_dict.get('DAStatus2: Cell temperature', 0.0),2)}, " +
                         f"SOH: {self.battery_dict['SOH: SOH']}, " + 
                         f"Cycle count: {cc.get('Cycle count')}")
 
@@ -738,27 +740,30 @@ class BQ40Z50:
         da_status_block = self.read_block_mac(DASTATUS2_CMD)
         da_status = dict()
 
+        K_TO_DEG = 273.15
+        DK_TO_K = 0.1
+
         if da_status_block:
             # Int temperature
-            da_status['Int temperature'] = (da_status_block[1] << 8) | da_status_block[0]
+            da_status['Int temperature'] = ((da_status_block[1] << 8) | da_status_block[0])*DK_TO_K - K_TO_DEG
 
             # TS1 Temperature
-            da_status['TS1 temperature'] = (da_status_block[3] << 8) | da_status_block[2]
+            da_status['TS1 temperature'] = ((da_status_block[3] << 8) | da_status_block[2])*DK_TO_K - K_TO_DEG
 
             # TS2 Temperature
-            da_status['TS2 temperature'] = (da_status_block[5] << 8) | da_status_block[4]
+            da_status['TS2 temperature'] = ((da_status_block[5] << 8) | da_status_block[4])*DK_TO_K - K_TO_DEG
 
             # TS3 Temperature
-            da_status['TS3 temperature'] = (da_status_block[7] << 8) | da_status_block[6]
+            da_status['TS3 temperature'] = ((da_status_block[7] << 8) | da_status_block[6])*DK_TO_K - K_TO_DEG
 
             # TS4 Temperature
-            da_status['TS4 temperature'] = (da_status_block[9] << 8) | da_status_block[8]
+            da_status['TS4 temperature'] = ((da_status_block[9] << 8) | da_status_block[8])*DK_TO_K - K_TO_DEG
 
             # Cell Temperature
-            da_status['Cell temperature'] = (da_status_block[11] << 8) | da_status_block[10]
+            da_status['Cell temperature'] = ((da_status_block[11] << 8) | da_status_block[10])*DK_TO_K - K_TO_DEG
 
             # FET Temperature
-            da_status['FET temperature'] = (da_status_block[13] << 8) | da_status_block[12]
+            da_status['FET temperature'] = ((da_status_block[13] << 8) | da_status_block[12])*DK_TO_K - K_TO_DEG
 
         return da_status
 
