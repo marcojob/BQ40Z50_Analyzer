@@ -8,11 +8,13 @@ from array import array
 from time import sleep, monotonic
 from pathlib import Path
 
+
 class BQ40Z50:
     def __init__(self):
         self.ev = ev2300.EV2300()
         self.ev.prepare()
         self.battery_dict = dict()
+        self.quick_report = dict()
         self.battery_dict_ready = False
         self.logger = logging.getLogger()
 
@@ -47,13 +49,12 @@ class BQ40Z50:
         content = f.readlines()
         if content:
             self.logger.error("Monitoring file is not empty, exiting")
-            #return -1
+            # return -1
 
         # Logging monitoring time setup
         LOG_FREQ = 4
         interval_ms = 1000.0/LOG_FREQ
         log_time_last_ms = self.get_time_ms()
-
 
         while(True):
             log_time_now_ms = self.get_time_ms()
@@ -169,19 +170,19 @@ class BQ40Z50:
         f.write("\n")
         cc = self.get_cycle_count()
         self.logger.info(f"Log: {self.get_time_ms()}, " +
-                        f"Cell 1: {self.battery_dict['DAStatus1: Cell voltage 1']} mV, " +
-                        f"Cell 2: {self.battery_dict['DAStatus1: Cell voltage 2']} mV, " +
-                        f"Cell 3: {self.battery_dict['DAStatus1: Cell voltage 3']} mV, " +
-                        f"Cell 4: {self.battery_dict['DAStatus1: Cell voltage 4']} mV, " +
-                        f"T: {round(self.battery_dict.get('Temperature: Temperature', 0.0),2)}, " +
-                        f"T1: {round(self.battery_dict.get('DAStatus2: TS1 temperature', 0.0),2)}, " +
-                        f"T2: {round(self.battery_dict.get('DAStatus2: TS2 temperature', 0.0),2)}, " +
-                        f"T3: {round(self.battery_dict.get('DAStatus2: TS3 temperature', 0.0),2)}, " +
-                        f"T4: {round(self.battery_dict.get('DAStatus2: TS4 temperature', 0.0),2)}, " +
-                        f"Int: {round(self.battery_dict.get('DAStatus2: Int temperature', 0.0),2)}, " +
-                        f"Cell: {round(self.battery_dict.get('DAStatus2: Cell temperature', 0.0),2)}, " +
-                        f"SOH: {self.battery_dict['SOH: SOH']}, " + 
-                        f"Cycle count: {cc.get('Cycle count')}")
+                         f"Cell 1: {self.battery_dict['DAStatus1: Cell voltage 1']} mV, " +
+                         f"Cell 2: {self.battery_dict['DAStatus1: Cell voltage 2']} mV, " +
+                         f"Cell 3: {self.battery_dict['DAStatus1: Cell voltage 3']} mV, " +
+                         f"Cell 4: {self.battery_dict['DAStatus1: Cell voltage 4']} mV, " +
+                         f"T: {round(self.battery_dict.get('Temperature: Temperature', 0.0),2)}, " +
+                         f"T1: {round(self.battery_dict.get('DAStatus2: TS1 temperature', 0.0),2)}, " +
+                         f"T2: {round(self.battery_dict.get('DAStatus2: TS2 temperature', 0.0),2)}, " +
+                         f"T3: {round(self.battery_dict.get('DAStatus2: TS3 temperature', 0.0),2)}, " +
+                         f"T4: {round(self.battery_dict.get('DAStatus2: TS4 temperature', 0.0),2)}, " +
+                         f"Int: {round(self.battery_dict.get('DAStatus2: Int temperature', 0.0),2)}, " +
+                         f"Cell: {round(self.battery_dict.get('DAStatus2: Cell temperature', 0.0),2)}, " +
+                         f"SOH: {self.battery_dict['SOH: SOH']}, " +
+                         f"Cycle count: {cc.get('Cycle count')}")
 
     def get_soh(self):
         soh_dict = dict()
@@ -218,7 +219,6 @@ class BQ40Z50:
             soc_dict["Full charge capacity"] = full_charge_cap_word
 
         return soc_dict
-
 
     def get_voltage(self):
         voltage_dict = dict()
@@ -273,7 +273,18 @@ class BQ40Z50:
             # Write battery_dict into file
             self.write_summary()
 
+            # Print quick summary
+            self.create_quick_report()
+
             inp = input("Press ENTER for next battery")
+
+    def create_quick_report(self):
+        if len(self.quick_report.keys()) == 0:
+            self.logger.info("Quick report did not yield a direct result, please investigate report csv")
+        else:
+            self.logger.warning("Quick report:")
+            for k in self.quick_report.keys():
+                self.logger.warning("{}: {}".format(k, self.quick_report[k]))
 
     def write_summary(self):
         f = open(DATA_FILE, "a")
@@ -301,7 +312,6 @@ class BQ40Z50:
         f.write("\n")
 
         f.close()
-
 
     def prepare_csv(self):
         data_file = Path(DATA_FILE)
@@ -371,6 +381,7 @@ class BQ40Z50:
         # Add PF status
         pf_status_dict = self.get_pf_status()
         self.add_to_battery_dict(pf_status_dict, "PF Status")
+        self.add_to_quick_report(pf_status_dict, "PF Status", report_type='flags')
 
         # Add gauging status
         gauging_status_dict = self.get_gauging_status()
@@ -387,6 +398,17 @@ class BQ40Z50:
         # Add gauge status 3
         gauge_status_3 = self.get_gauge_status3()
         self.add_to_battery_dict(gauge_status_3, "GaugeStatus3")
+
+    def add_to_quick_report(self, data_dict, title, report_type):
+        if report_type == 'flags':
+            for k in data_dict.keys():
+                f_title = title + " " + k
+                # For this type all flags need to be zero
+                if not data_dict[k] == 0:
+                    self.quick_report[f_title] = data_dict[k]
+        else:
+            self.logger.warning(
+                "Quick report type {} not known,".format(report_type))
 
     def add_to_battery_dict(self, result_dict: dict, topic_name: str):
         for key in result_dict.keys():
@@ -469,7 +491,8 @@ class BQ40Z50:
         operation_status_block = self.read_block_mac(OPERATIONSTATUS_CMD)
         # sec = (self.get_bit(operation_status_block[2], 1) << 1) | self.get_bit(operation_status_block[2], 0)
         if operation_status_block is not None:
-            sec = (self.get_bit(operation_status_block[1], 1) << 1) | self.get_bit(operation_status_block[1], 0)
+            sec = (self.get_bit(operation_status_block[1], 1) << 1) | self.get_bit(
+                operation_status_block[1], 0)
             if sec == 1 or sec == 2:
                 return False
             return True
@@ -503,8 +526,10 @@ class BQ40Z50:
         serial_number = dict()
 
         if serial_number_block:
-            serial_number["Serial Number 1"] = serial_number_block.tobytes().decode('utf-8').split(';')[0]
-            serial_number["Serial Number 2"] = serial_number_block.tobytes().decode('utf-8').split(';')[1]
+            serial_number["Serial Number 1"] = serial_number_block.tobytes().decode(
+                'utf-8').split(';')[0]
+            serial_number["Serial Number 2"] = serial_number_block.tobytes().decode(
+                'utf-8').split(';')[1]
 
         return serial_number
 
@@ -514,40 +539,52 @@ class BQ40Z50:
 
         if gauge_status_block:
             # QMax 0
-            gauge_status['QMax 0'] = (gauge_status_block[1] << 8) | gauge_status_block[0]
+            gauge_status['QMax 0'] = (
+                gauge_status_block[1] << 8) | gauge_status_block[0]
 
             # QMax 1
-            gauge_status['QMax 1'] = (gauge_status_block[3] << 8) | gauge_status_block[2]
+            gauge_status['QMax 1'] = (
+                gauge_status_block[3] << 8) | gauge_status_block[2]
 
             # QMax 2
-            gauge_status['QMax 2'] = (gauge_status_block[5] << 8) | gauge_status_block[4]
+            gauge_status['QMax 2'] = (
+                gauge_status_block[5] << 8) | gauge_status_block[4]
 
             # QMax 3
-            gauge_status['QMax 3'] = (gauge_status_block[7] << 8) | gauge_status_block[6]
+            gauge_status['QMax 3'] = (
+                gauge_status_block[7] << 8) | gauge_status_block[6]
 
             # QMax DOD0_0
-            gauge_status['QMax DOD0_0'] = (gauge_status_block[9] << 8) | gauge_status_block[8]
+            gauge_status['QMax DOD0_0'] = (
+                gauge_status_block[9] << 8) | gauge_status_block[8]
 
             # QMax DOD0_1
-            gauge_status['QMax DOD0_1'] = (gauge_status_block[11] << 8) | gauge_status_block[10]
+            gauge_status['QMax DOD0_1'] = (
+                gauge_status_block[11] << 8) | gauge_status_block[10]
 
             # QMax DOD0_2
-            gauge_status['QMax DOD0_2'] = (gauge_status_block[13] << 8) | gauge_status_block[12]
+            gauge_status['QMax DOD0_2'] = (
+                gauge_status_block[13] << 8) | gauge_status_block[12]
 
             # QMax DOD0_3
-            gauge_status['QMax DOD0_3'] = (gauge_status_block[15] << 8) | gauge_status_block[14]
+            gauge_status['QMax DOD0_3'] = (
+                gauge_status_block[15] << 8) | gauge_status_block[14]
 
             # QMax Passed Q
-            gauge_status['QMax Passed Q'] = (gauge_status_block[17] << 8) | gauge_status_block[16]
+            gauge_status['QMax Passed Q'] = (
+                gauge_status_block[17] << 8) | gauge_status_block[16]
 
             # QMax Time
-            gauge_status['QMax Time'] = (gauge_status_block[19] << 8) | gauge_status_block[18]
+            gauge_status['QMax Time'] = (
+                gauge_status_block[19] << 8) | gauge_status_block[18]
 
             # Temp k: Thermal model temperature factor
-            gauge_status['Temp k'] = (gauge_status_block[21] << 8) | gauge_status_block[20]
+            gauge_status['Temp k'] = (
+                gauge_status_block[21] << 8) | gauge_status_block[20]
 
             # Temp a: Thermal model temperature
-            gauge_status['Temp a'] = (gauge_status_block[23] << 8) | gauge_status_block[22]
+            gauge_status['Temp a'] = (
+                gauge_status_block[23] << 8) | gauge_status_block[22]
 
         return gauge_status
 
@@ -560,7 +597,8 @@ class BQ40Z50:
             gauge_status['Pack grid'] = gauge_status_block[0]
 
             # Learned status of resistance table
-            qmax_status = self.get_bit(gauge_status_block[1], 1) << 1 | self.get_bit(gauge_status_block[1], 0)
+            qmax_status = self.get_bit(gauge_status_block[1], 1) << 1 | self.get_bit(
+                gauge_status_block[1], 0)
             if qmax_status == 0:
                 gauge_status['QMax Status'] = 'Battery OK'
             elif qmax_status == 1:
@@ -574,7 +612,8 @@ class BQ40Z50:
             gauge_status['ITEN'] = self.get_bit(gauge_status_block[1], 2)
 
             # QMax update in field
-            gauge_status['QMax upd. field'] = self.get_bit(gauge_status_block[1], 3)
+            gauge_status['QMax upd. field'] = self.get_bit(
+                gauge_status_block[1], 3)
 
             # Cell grid 0
             gauge_status['Cell grid 0'] = gauge_status_block[2]
@@ -589,40 +628,52 @@ class BQ40Z50:
             gauge_status['Cell grid 3'] = gauge_status_block[5]
 
             # State time, time passed since last state change
-            gauge_status['State time'] = (gauge_status_block[6] << 8) | gauge_status_block[7]
+            gauge_status['State time'] = (
+                gauge_status_block[6] << 8) | gauge_status_block[7]
 
             # Depth of discharge cell 1
-            gauge_status['DOD0_0'] = (gauge_status_block[8] << 8) | gauge_status_block[9]
+            gauge_status['DOD0_0'] = (
+                gauge_status_block[8] << 8) | gauge_status_block[9]
 
             # Depth of discharge cell 2
-            gauge_status['DOD0_1'] = (gauge_status_block[10] << 8) | gauge_status_block[11]
+            gauge_status['DOD0_1'] = (
+                gauge_status_block[10] << 8) | gauge_status_block[11]
 
             # Depth of discharge cell 3
-            gauge_status['DOD0_2'] = (gauge_status_block[12] << 8) | gauge_status_block[13]
+            gauge_status['DOD0_2'] = (
+                gauge_status_block[12] << 8) | gauge_status_block[13]
 
             # Depth of discharge cell 4
-            gauge_status['DOD0_3'] = (gauge_status_block[14] << 8) | gauge_status_block[15]
+            gauge_status['DOD0_3'] = (
+                gauge_status_block[14] << 8) | gauge_status_block[15]
 
             # Passed capacity since last DOD0 update
-            gauge_status['DOD0 Q'] = (gauge_status_block[16] << 8) | gauge_status_block[17]
+            gauge_status['DOD0 Q'] = (
+                gauge_status_block[16] << 8) | gauge_status_block[17]
 
             # Passed energy since last DOD0 update
-            gauge_status['DOD0 E'] = (gauge_status_block[18] << 8) | gauge_status_block[19]
+            gauge_status['DOD0 E'] = (
+                gauge_status_block[18] << 8) | gauge_status_block[19]
 
             # Passed time since last DOD0 update
-            gauge_status['DOD0 Time'] = (gauge_status_block[20] << 8) | gauge_status_block[21]
+            gauge_status['DOD0 Time'] = (
+                gauge_status_block[20] << 8) | gauge_status_block[21]
 
             # Depth of discharge at end of charge cell 1
-            gauge_status['DODEOC 0'] = (gauge_status_block[22] << 8) | gauge_status_block[23]
+            gauge_status['DODEOC 0'] = (
+                gauge_status_block[22] << 8) | gauge_status_block[23]
 
             # Depth of discharge at end of charge cell 2
-            gauge_status['DODEOC 1'] = (gauge_status_block[24] << 8) | gauge_status_block[25]
+            gauge_status['DODEOC 1'] = (
+                gauge_status_block[24] << 8) | gauge_status_block[25]
 
             # Depth of discharge at end of charge cell 3
-            gauge_status['DODEOC 2'] = (gauge_status_block[26] << 8) | gauge_status_block[27]
+            gauge_status['DODEOC 2'] = (
+                gauge_status_block[26] << 8) | gauge_status_block[27]
 
             # Depth of discharge at end of charge cell 4
-            gauge_status['DODEOC 3'] = (gauge_status_block[28] << 8) | gauge_status_block[29]
+            gauge_status['DODEOC 3'] = (
+                gauge_status_block[28] << 8) | gauge_status_block[29]
 
         return gauge_status
 
@@ -632,52 +683,68 @@ class BQ40Z50:
 
         if gauge_status_block:
             # True Rem Q
-            gauge_status['True Rem Q'] = (gauge_status_block[1] << 8) | gauge_status_block[0]
+            gauge_status['True Rem Q'] = (
+                gauge_status_block[1] << 8) | gauge_status_block[0]
 
             # True Rem E
-            gauge_status['True Rem E'] = (gauge_status_block[3] << 8) | gauge_status_block[2]
+            gauge_status['True Rem E'] = (
+                gauge_status_block[3] << 8) | gauge_status_block[2]
 
             # Initial Q
-            gauge_status['Initial Q'] = (gauge_status_block[5] << 8) | gauge_status_block[4]
+            gauge_status['Initial Q'] = (
+                gauge_status_block[5] << 8) | gauge_status_block[4]
 
             # Initial E
-            gauge_status['Initial E'] = (gauge_status_block[7] << 8) | gauge_status_block[6]
+            gauge_status['Initial E'] = (
+                gauge_status_block[7] << 8) | gauge_status_block[6]
 
             # True FCC Q
-            gauge_status['True FCC Q'] = (gauge_status_block[9] << 8) | gauge_status_block[8]
+            gauge_status['True FCC Q'] = (
+                gauge_status_block[9] << 8) | gauge_status_block[8]
 
             # True FCC E
-            gauge_status['True FCC E'] = (gauge_status_block[11] << 8) | gauge_status_block[10]
+            gauge_status['True FCC E'] = (
+                gauge_status_block[11] << 8) | gauge_status_block[10]
 
             # T_sim, temperature during last simulation run
-            gauge_status['T_sim'] = (gauge_status_block[13] << 8) | gauge_status_block[12]
+            gauge_status['T_sim'] = (
+                gauge_status_block[13] << 8) | gauge_status_block[12]
 
             # T_ambient, current assumed ambient temperature
-            gauge_status['T_ambient'] = (gauge_status_block[15] << 8) | gauge_status_block[14]
+            gauge_status['T_ambient'] = (
+                gauge_status_block[15] << 8) | gauge_status_block[14]
 
             # Ra Scale 0
-            gauge_status['Ra Scale 0'] = (gauge_status_block[17] << 8) | gauge_status_block[16]
+            gauge_status['Ra Scale 0'] = (
+                gauge_status_block[17] << 8) | gauge_status_block[16]
 
             # Ra Scale 1
-            gauge_status['Ra Scale 1'] = (gauge_status_block[19] << 8) | gauge_status_block[18]
+            gauge_status['Ra Scale 1'] = (
+                gauge_status_block[19] << 8) | gauge_status_block[18]
 
             # Ra Scale 2
-            gauge_status['Ra Scale 2'] = (gauge_status_block[21] << 8) | gauge_status_block[20]
+            gauge_status['Ra Scale 2'] = (
+                gauge_status_block[21] << 8) | gauge_status_block[20]
 
             # Ra Scale 3
-            gauge_status['Ra Scale 3'] = (gauge_status_block[23] << 8) | gauge_status_block[22]
+            gauge_status['Ra Scale 3'] = (
+                gauge_status_block[23] << 8) | gauge_status_block[22]
 
             # Comp Res 0
-            gauge_status['Comp Res 0'] = (gauge_status_block[25] << 8) | gauge_status_block[24]
+            gauge_status['Comp Res 0'] = (
+                gauge_status_block[25] << 8) | gauge_status_block[24]
 
             # Comp Res 1
-            gauge_status['Comp Res 1'] = (gauge_status_block[27] << 8) | gauge_status_block[26]
+            gauge_status['Comp Res 1'] = (
+                gauge_status_block[27] << 8) | gauge_status_block[26]
 
             # Comp Res 2
-            gauge_status['Comp Res 2'] = (gauge_status_block[29] << 8) | gauge_status_block[28]
+            gauge_status['Comp Res 2'] = (
+                gauge_status_block[29] << 8) | gauge_status_block[28]
 
             # Comp Res 3
-            gauge_status['Comp Res 3'] = (gauge_status_block[31] << 8) | gauge_status_block[30]
+            gauge_status['Comp Res 3'] = (
+                gauge_status_block[31] << 8) | gauge_status_block[30]
 
         return gauge_status
 
@@ -687,52 +754,68 @@ class BQ40Z50:
 
         if da_status_block:
             # Cell voltage 1
-            da_status['Cell voltage 1'] = (da_status_block[1] << 8) | da_status_block[0]
+            da_status['Cell voltage 1'] = (
+                da_status_block[1] << 8) | da_status_block[0]
 
             # Cell voltage 2
-            da_status['Cell voltage 2'] = (da_status_block[3] << 8) | da_status_block[2]
+            da_status['Cell voltage 2'] = (
+                da_status_block[3] << 8) | da_status_block[2]
 
             # Cell voltage 3
-            da_status['Cell voltage 3'] = (da_status_block[5] << 8) | da_status_block[4]
+            da_status['Cell voltage 3'] = (
+                da_status_block[5] << 8) | da_status_block[4]
 
             # Cell voltage 4
-            da_status['Cell voltage 4'] = (da_status_block[7] << 8) | da_status_block[6]
+            da_status['Cell voltage 4'] = (
+                da_status_block[7] << 8) | da_status_block[6]
 
             # BAT voltage (really measured, not just sum)
-            da_status['BAT voltage'] = (da_status_block[9] << 8) | da_status_block[8]
+            da_status['BAT voltage'] = (
+                da_status_block[9] << 8) | da_status_block[8]
 
             # Pack voltage
-            da_status['Pack voltage'] = (da_status_block[11] << 8) | da_status_block[10]
+            da_status['Pack voltage'] = (
+                da_status_block[11] << 8) | da_status_block[10]
 
             # Cell current 1
-            da_status['Cell current 1'] = (da_status_block[13] << 8) | da_status_block[12]
+            da_status['Cell current 1'] = (
+                da_status_block[13] << 8) | da_status_block[12]
 
             # Cell current 2
-            da_status['Cell current 2'] = (da_status_block[15] << 8) | da_status_block[14]
+            da_status['Cell current 2'] = (
+                da_status_block[15] << 8) | da_status_block[14]
 
             # Cell current 3
-            da_status['Cell current 3'] = (da_status_block[17] << 8) | da_status_block[16]
+            da_status['Cell current 3'] = (
+                da_status_block[17] << 8) | da_status_block[16]
 
             # Cell current 4
-            da_status['Cell current 4'] = (da_status_block[19] << 8) | da_status_block[18]
+            da_status['Cell current 4'] = (
+                da_status_block[19] << 8) | da_status_block[18]
 
             # Cell power 1
-            da_status['Cell power 1'] = (da_status_block[21] << 8) | da_status_block[20]
+            da_status['Cell power 1'] = (
+                da_status_block[21] << 8) | da_status_block[20]
 
             # Cell power 2
-            da_status['Cell power 2'] = (da_status_block[23] << 8) | da_status_block[22]
+            da_status['Cell power 2'] = (
+                da_status_block[23] << 8) | da_status_block[22]
 
             # Cell power 3
-            da_status['Cell power 3'] = (da_status_block[25] << 8) | da_status_block[24]
+            da_status['Cell power 3'] = (
+                da_status_block[25] << 8) | da_status_block[24]
 
             # Cell power 4
-            da_status['Cell power 4'] = (da_status_block[27] << 8) | da_status_block[26]
+            da_status['Cell power 4'] = (
+                da_status_block[27] << 8) | da_status_block[26]
 
             # Power voltage() * current()
-            da_status['Power'] = (da_status_block[29] << 8) | da_status_block[28]
+            da_status['Power'] = (da_status_block[29] <<
+                                  8) | da_status_block[28]
 
             # Average power
-            da_status['Avg power'] = (da_status_block[31] << 8) | da_status_block[30]
+            da_status['Avg power'] = (
+                da_status_block[31] << 8) | da_status_block[30]
 
         return da_status
 
@@ -745,25 +828,32 @@ class BQ40Z50:
 
         if da_status_block:
             # Int temperature
-            da_status['Int temperature'] = ((da_status_block[1] << 8) | da_status_block[0])*DK_TO_K - K_TO_DEG
+            da_status['Int temperature'] = (
+                (da_status_block[1] << 8) | da_status_block[0])*DK_TO_K - K_TO_DEG
 
             # TS1 Temperature
-            da_status['TS1 temperature'] = ((da_status_block[3] << 8) | da_status_block[2])*DK_TO_K - K_TO_DEG
+            da_status['TS1 temperature'] = (
+                (da_status_block[3] << 8) | da_status_block[2])*DK_TO_K - K_TO_DEG
 
             # TS2 Temperature
-            da_status['TS2 temperature'] = ((da_status_block[5] << 8) | da_status_block[4])*DK_TO_K - K_TO_DEG
+            da_status['TS2 temperature'] = (
+                (da_status_block[5] << 8) | da_status_block[4])*DK_TO_K - K_TO_DEG
 
             # TS3 Temperature
-            da_status['TS3 temperature'] = ((da_status_block[7] << 8) | da_status_block[6])*DK_TO_K - K_TO_DEG
+            da_status['TS3 temperature'] = (
+                (da_status_block[7] << 8) | da_status_block[6])*DK_TO_K - K_TO_DEG
 
             # TS4 Temperature
-            da_status['TS4 temperature'] = ((da_status_block[9] << 8) | da_status_block[8])*DK_TO_K - K_TO_DEG
+            da_status['TS4 temperature'] = (
+                (da_status_block[9] << 8) | da_status_block[8])*DK_TO_K - K_TO_DEG
 
             # Cell Temperature
-            da_status['Cell temperature'] = ((da_status_block[11] << 8) | da_status_block[10])*DK_TO_K - K_TO_DEG
+            da_status['Cell temperature'] = (
+                (da_status_block[11] << 8) | da_status_block[10])*DK_TO_K - K_TO_DEG
 
             # FET Temperature
-            da_status['FET temperature'] = ((da_status_block[13] << 8) | da_status_block[12])*DK_TO_K - K_TO_DEG
+            da_status['FET temperature'] = (
+                (da_status_block[13] << 8) | da_status_block[12])*DK_TO_K - K_TO_DEG
 
         return da_status
 
@@ -791,7 +881,8 @@ class BQ40Z50:
             gauging_status['NSFM'] = self.get_bit(gauging_status_block[1], 7)
 
             # OCV update in sleep mode
-            gauging_status['SLPQMax'] = self.get_bit(gauging_status_block[1], 5)
+            gauging_status['SLPQMax'] = self.get_bit(
+                gauging_status_block[1], 5)
 
             # Impedance track gauging (Ra and Qmax update are enabled)
             gauging_status['QEN'] = self.get_bit(gauging_status_block[1], 4)
@@ -830,7 +921,6 @@ class BQ40Z50:
             gauging_status['FD'] = self.get_bit(gauging_status_block[0], 0)
 
         return gauging_status
-
 
     def get_pf_alert(self):
         pf_alert_block = self.read_block_mac(PFALERT_CMD)
@@ -999,55 +1089,70 @@ class BQ40Z50:
 
         if operation_status_block:
             # Emergency FET shutdown
-            operation_status['EMSHUT'] = self.get_bit(operation_status_block[3], 5)
+            operation_status['EMSHUT'] = self.get_bit(
+                operation_status_block[3], 5)
 
             # Cell balancing status
             operation_status['CB'] = self.get_bit(operation_status_block[3], 4)
 
             # CC measurements in SLEEP
-            operation_status['SLPCC'] = self.get_bit(operation_status_block[3], 3)
+            operation_status['SLPCC'] = self.get_bit(
+                operation_status_block[3], 3)
 
             # ADC measurements in SLEEP
-            operation_status['SLPAD'] = self.get_bit(operation_status_block[3], 2)
+            operation_status['SLPAD'] = self.get_bit(
+                operation_status_block[3], 2)
 
             # Auto CC calibration
-            operation_status['SMBLCAL'] = self.get_bit(operation_status_block[3], 1)
+            operation_status['SMBLCAL'] = self.get_bit(
+                operation_status_block[3], 1)
 
             # Initialization after full reset
-            operation_status['INIT'] = self.get_bit(operation_status_block[3], 0)
+            operation_status['INIT'] = self.get_bit(
+                operation_status_block[3], 0)
 
             # SLEEP mode triggered via command
-            operation_status['SLEEPM'] = self.get_bit(operation_status_block[2], 7)
+            operation_status['SLEEPM'] = self.get_bit(
+                operation_status_block[2], 7)
 
             # 400 kHz SMBUS mode
             operation_status['XL'] = self.get_bit(operation_status_block[2], 6)
 
             # Calibration Output
-            operation_status['CAL_OFFSET'] = self.get_bit(operation_status_block[2], 5)
+            operation_status['CAL_OFFSET'] = self.get_bit(
+                operation_status_block[2], 5)
 
             # Calibration Output
-            operation_status['CAL'] = self.get_bit(operation_status_block[2], 4)
+            operation_status['CAL'] = self.get_bit(
+                operation_status_block[2], 4)
 
             # Auto CC Offset Calibration
-            operation_status['AUTOCALM'] = self.get_bit(operation_status_block[2], 3)
+            operation_status['AUTOCALM'] = self.get_bit(
+                operation_status_block[2], 3)
 
             # Authentication in progress
-            operation_status['AUTH'] = self.get_bit(operation_status_block[2], 2)
+            operation_status['AUTH'] = self.get_bit(
+                operation_status_block[2], 2)
 
             # LED display
-            operation_status['LED'] = self.get_bit(operation_status_block[2], 1)
+            operation_status['LED'] = self.get_bit(
+                operation_status_block[2], 1)
 
             # Shutdown triggered via command
-            operation_status['SDM'] = self.get_bit(operation_status_block[2], 0)
+            operation_status['SDM'] = self.get_bit(
+                operation_status_block[2], 0)
 
             # SLEEP conditions met
-            operation_status['SLEEP'] = self.get_bit(operation_status_block[1], 7)
+            operation_status['SLEEP'] = self.get_bit(
+                operation_status_block[1], 7)
 
             # Charging disabled
-            operation_status['XCHG'] = self.get_bit(operation_status_block[1], 6)
+            operation_status['XCHG'] = self.get_bit(
+                operation_status_block[1], 6)
 
             # Discharging disabled
-            operation_status['XDSG'] = self.get_bit(operation_status_block[1], 5)
+            operation_status['XDSG'] = self.get_bit(
+                operation_status_block[1], 5)
 
             # PERMANENT FAILURE mode status
             operation_status['PF'] = self.get_bit(operation_status_block[1], 4)
@@ -1056,9 +1161,11 @@ class BQ40Z50:
             operation_status['SS'] = self.get_bit(operation_status_block[1], 3)
 
             # Shutdown triggered via low pack voltage
-            operation_status['SDV'] = self.get_bit(operation_status_block[1], 2)
+            operation_status['SDV'] = self.get_bit(
+                operation_status_block[1], 2)
 
-            sec = (self.get_bit(operation_status_block[1], 1) << 1) | self.get_bit(operation_status_block[1], 0)
+            sec = (self.get_bit(operation_status_block[1], 1) << 1) | self.get_bit(
+                operation_status_block[1], 0)
             if sec == 0:
                 operation_status['SEC'] = 'Reserved'
             elif sec == 1:
@@ -1069,22 +1176,28 @@ class BQ40Z50:
                 operation_status['SEC'] = 'Sealed'
 
             # Battery Trip Point Interrupt
-            operation_status['BTP_INT'] = self.get_bit(operation_status_block[0], 7)
+            operation_status['BTP_INT'] = self.get_bit(
+                operation_status_block[0], 7)
 
             # Fuse status
-            operation_status['FUSE'] = self.get_bit(operation_status_block[0], 5)
+            operation_status['FUSE'] = self.get_bit(
+                operation_status_block[0], 5)
 
             # Precharge FET Status
-            operation_status['PCHG'] = self.get_bit(operation_status_block[0], 3)
+            operation_status['PCHG'] = self.get_bit(
+                operation_status_block[0], 3)
 
             # CHG FET status
-            operation_status['CHG'] = self.get_bit(operation_status_block[0], 2)
+            operation_status['CHG'] = self.get_bit(
+                operation_status_block[0], 2)
 
             # DSG FET status
-            operation_status['DSG'] = self.get_bit(operation_status_block[0], 1)
+            operation_status['DSG'] = self.get_bit(
+                operation_status_block[0], 1)
 
             # Syste present low
-            operation_status['PRES'] = self.get_bit(operation_status_block[0], 0)
+            operation_status['PRES'] = self.get_bit(
+                operation_status_block[0], 0)
 
         return operation_status
 
@@ -1225,7 +1338,6 @@ class BQ40Z50:
 
         return safety_alert
 
-
     def get_safety_status(self):
         safety_status_block = self.read_block_mac(SAFETYSTATUS_CMD)
         safety_status = dict()
@@ -1311,36 +1423,50 @@ class BQ40Z50:
 
         if lifetime_block:
             # Shortcircuit during charge
-            lifetime['N ASCC ev'] = (lifetime_block[1] << 8) | lifetime_block[0]
-            lifetime['Last ASCC ev'] = (lifetime_block[3] << 8) | lifetime_block[2]
+            lifetime['N ASCC ev'] = (
+                lifetime_block[1] << 8) | lifetime_block[0]
+            lifetime['Last ASCC ev'] = (
+                lifetime_block[3] << 8) | lifetime_block[2]
 
             # Overtemperature during charge
             lifetime['N OTC ev'] = (lifetime_block[5] << 8) | lifetime_block[4]
-            lifetime['Last OTC ev'] = (lifetime_block[7] << 8) | lifetime_block[6]
+            lifetime['Last OTC ev'] = (
+                lifetime_block[7] << 8) | lifetime_block[6]
 
             # Overtemperature during discharge
             lifetime['N OTD ev'] = (lifetime_block[9] << 8) | lifetime_block[8]
-            lifetime['Last OTD ev'] = (lifetime_block[11] << 8) | lifetime_block[10]
+            lifetime['Last OTD ev'] = (
+                lifetime_block[11] << 8) | lifetime_block[10]
 
             # Overtemperature FET
-            lifetime['N OTF ev'] = (lifetime_block[13] << 8) | lifetime_block[12]
-            lifetime['Last OTF ev'] = (lifetime_block[15] << 8) | lifetime_block[14]
+            lifetime['N OTF ev'] = (
+                lifetime_block[13] << 8) | lifetime_block[12]
+            lifetime['Last OTF ev'] = (
+                lifetime_block[15] << 8) | lifetime_block[14]
 
             # Total number of valid charge terminations
-            lifetime['N valid charge term'] = (lifetime_block[17] << 8) | lifetime_block[16]
-            lifetime['Last valid charge term'] = (lifetime_block[19] << 8) | lifetime_block[18]
+            lifetime['N valid charge term'] = (
+                lifetime_block[17] << 8) | lifetime_block[16]
+            lifetime['Last valid charge term'] = (
+                lifetime_block[19] << 8) | lifetime_block[18]
 
             # Total number of QMax updates
-            lifetime['N Qmax update'] = (lifetime_block[21] << 8) | lifetime_block[20]
-            lifetime['Last Qmax update'] = (lifetime_block[23] << 8) | lifetime_block[22]
+            lifetime['N Qmax update'] = (
+                lifetime_block[21] << 8) | lifetime_block[20]
+            lifetime['Last Qmax update'] = (
+                lifetime_block[23] << 8) | lifetime_block[22]
 
             # Total number of resistance updates
-            lifetime['N Ra updates'] = (lifetime_block[25] << 8) | lifetime_block[24]
-            lifetime['Last Ra update'] = (lifetime_block[27] << 8) | lifetime_block[26]
+            lifetime['N Ra updates'] = (
+                lifetime_block[25] << 8) | lifetime_block[24]
+            lifetime['Last Ra update'] = (
+                lifetime_block[27] << 8) | lifetime_block[26]
 
             # Total number of resistances updates
-            lifetime['N Ra disable'] = (lifetime_block[29] << 8) | lifetime_block[28]
-            lifetime['Last Ra disable'] = (lifetime_block[31] << 8) | lifetime_block[30]
+            lifetime['N Ra disable'] = (
+                lifetime_block[29] << 8) | lifetime_block[28]
+            lifetime['Last Ra disable'] = (
+                lifetime_block[31] << 8) | lifetime_block[30]
 
         return lifetime
 
@@ -1351,35 +1477,49 @@ class BQ40Z50:
         if lifetime_block:
             # Cell Overvoltage Events
             lifetime['N COV ev'] = (lifetime_block[1] << 8) | lifetime_block[0]
-            lifetime['Last COV ev'] = (lifetime_block[3] << 8) | lifetime_block[2]
+            lifetime['Last COV ev'] = (
+                lifetime_block[3] << 8) | lifetime_block[2]
 
             # Cell Undervoltage Events
             lifetime['N CUV ev'] = (lifetime_block[5] << 8) | lifetime_block[4]
-            lifetime['Last CUV ev'] = (lifetime_block[7] << 8) | lifetime_block[6]
+            lifetime['Last CUV ev'] = (
+                lifetime_block[7] << 8) | lifetime_block[6]
 
             # Over Current Discharge Tier 1
-            lifetime['N OCD1 ev'] = (lifetime_block[9] << 8) | lifetime_block[8]
-            lifetime['Last OCD1 ev'] = (lifetime_block[11] << 8) | lifetime_block[10]
+            lifetime['N OCD1 ev'] = (
+                lifetime_block[9] << 8) | lifetime_block[8]
+            lifetime['Last OCD1 ev'] = (
+                lifetime_block[11] << 8) | lifetime_block[10]
 
             # Over Current Discharge Tier 2
-            lifetime['N OCD2 ev'] = (lifetime_block[13] << 8) | lifetime_block[12]
-            lifetime['Last OCD2 ev'] = (lifetime_block[15] << 8) | lifetime_block[14]
+            lifetime['N OCD2 ev'] = (
+                lifetime_block[13] << 8) | lifetime_block[12]
+            lifetime['Last OCD2 ev'] = (
+                lifetime_block[15] << 8) | lifetime_block[14]
 
             # Over Current Charge Tier 1
-            lifetime['N OCC1 ev'] = (lifetime_block[17] << 8) | lifetime_block[16]
-            lifetime['Last OCC1 ev'] = (lifetime_block[19] << 8) | lifetime_block[18]
+            lifetime['N OCC1 ev'] = (
+                lifetime_block[17] << 8) | lifetime_block[16]
+            lifetime['Last OCC1 ev'] = (
+                lifetime_block[19] << 8) | lifetime_block[18]
 
             # Over Current Charge Tier 2
-            lifetime['N OCC2 ev'] = (lifetime_block[21] << 8) | lifetime_block[20]
-            lifetime['Last OCC2 ev'] = (lifetime_block[23] << 8) | lifetime_block[22]
+            lifetime['N OCC2 ev'] = (
+                lifetime_block[21] << 8) | lifetime_block[20]
+            lifetime['Last OCC2 ev'] = (
+                lifetime_block[23] << 8) | lifetime_block[22]
 
             # Overload in Discharge Protection
-            lifetime['N AOLD ev'] = (lifetime_block[25] << 8) | lifetime_block[24]
-            lifetime['Last AOLD ev'] = (lifetime_block[27] << 8) | lifetime_block[26]
+            lifetime['N AOLD ev'] = (
+                lifetime_block[25] << 8) | lifetime_block[24]
+            lifetime['Last AOLD ev'] = (
+                lifetime_block[27] << 8) | lifetime_block[26]
 
             # Short circuit in Discharge
-            lifetime['N ASCD ev'] = (lifetime_block[29] << 8) | lifetime_block[28]
-            lifetime['Last ASCD ev'] = (lifetime_block[31] << 8) | lifetime_block[30]
+            lifetime['N ASCD ev'] = (
+                lifetime_block[29] << 8) | lifetime_block[28]
+            lifetime['Last ASCD ev'] = (
+                lifetime_block[31] << 8) | lifetime_block[30]
 
         return lifetime
 
@@ -1389,7 +1529,8 @@ class BQ40Z50:
 
         if lifetime_block:
             # Total firmware runtime [2h]
-            lifetime['Total FW Runtime'] = (lifetime_block[1] << 8) | lifetime_block[0]
+            lifetime['Total FW Runtime'] = (
+                lifetime_block[1] << 8) | lifetime_block[0]
 
             # Total firmware runtime spent below T1 [2h]
             lifetime['Time UT'] = (lifetime_block[3] << 8) | lifetime_block[2]
@@ -1404,13 +1545,16 @@ class BQ40Z50:
             lifetime['Time RT'] = (lifetime_block[9] << 8) | lifetime_block[8]
 
             # Total firmware runtime spent between T6 and T3 [2h]
-            lifetime['Time STH'] = (lifetime_block[11] << 8) | lifetime_block[10]
+            lifetime['Time STH'] = (
+                lifetime_block[11] << 8) | lifetime_block[10]
 
             # Total firmware runtime spent between T3 and T4 [2h]
-            lifetime['Time HT'] = (lifetime_block[13] << 8) | lifetime_block[12]
+            lifetime['Time HT'] = (lifetime_block[13] <<
+                                   8) | lifetime_block[12]
 
             # Total firmware runtime spent above T6 [2h]
-            lifetime['Time OT'] = (lifetime_block[15] << 8) | lifetime_block[14]
+            lifetime['Time OT'] = (lifetime_block[15] <<
+                                   8) | lifetime_block[14]
 
         return lifetime
 
@@ -1438,31 +1582,44 @@ class BQ40Z50:
 
         if lifetime_block:
             # Max voltages
-            lifetime['Cell 1 max mV'] = (lifetime_block[1] << 8) | lifetime_block[0]
-            lifetime['Cell 2 max mV'] = (lifetime_block[3] << 8) | lifetime_block[2]
-            lifetime['Cell 3 max mV'] = (lifetime_block[5] << 8) | lifetime_block[4]
-            lifetime['Cell 4 max mV'] = (lifetime_block[7] << 8) | lifetime_block[6]
+            lifetime['Cell 1 max mV'] = (
+                lifetime_block[1] << 8) | lifetime_block[0]
+            lifetime['Cell 2 max mV'] = (
+                lifetime_block[3] << 8) | lifetime_block[2]
+            lifetime['Cell 3 max mV'] = (
+                lifetime_block[5] << 8) | lifetime_block[4]
+            lifetime['Cell 4 max mV'] = (
+                lifetime_block[7] << 8) | lifetime_block[6]
 
             # Min voltages
-            lifetime['Cell 1 min mV'] = (lifetime_block[9] << 8) | lifetime_block[8]
-            lifetime['Cell 2 min mV'] = (lifetime_block[11] << 8) | lifetime_block[10]
-            lifetime['Cell 3 min mV'] = (lifetime_block[13] << 8) | lifetime_block[12]
-            lifetime['Cell 4 min mV'] = (lifetime_block[15] << 8) | lifetime_block[14]
+            lifetime['Cell 1 min mV'] = (
+                lifetime_block[9] << 8) | lifetime_block[8]
+            lifetime['Cell 2 min mV'] = (
+                lifetime_block[11] << 8) | lifetime_block[10]
+            lifetime['Cell 3 min mV'] = (
+                lifetime_block[13] << 8) | lifetime_block[12]
+            lifetime['Cell 4 min mV'] = (
+                lifetime_block[15] << 8) | lifetime_block[14]
 
             # Max delta cell voltages
-            lifetime['Max Delta Cell mV'] = (lifetime_block[17] << 8) | lifetime_block[16]
+            lifetime['Max Delta Cell mV'] = (
+                lifetime_block[17] << 8) | lifetime_block[16]
 
             # Max charge current
-            lifetime['Max Charge mA'] = (lifetime_block[19] << 8) | lifetime_block[18]
+            lifetime['Max Charge mA'] = (
+                lifetime_block[19] << 8) | lifetime_block[18]
 
             # Max discharge current
-            lifetime['Max Discharge mA'] = (lifetime_block[21] << 8) | lifetime_block[20]
+            lifetime['Max Discharge mA'] = (
+                lifetime_block[21] << 8) | lifetime_block[20]
 
             # Max Avg Dsg Current
-            lifetime['Max Avg Dsg mA'] = (lifetime_block[23] << 8) | lifetime_block[22]
+            lifetime['Max Avg Dsg mA'] = (
+                lifetime_block[23] << 8) | lifetime_block[22]
 
             # Max Avg Dsg Power
-            lifetime['Max Avg Dsg mW'] = (lifetime_block[25] << 8) | lifetime_block[24]
+            lifetime['Max Avg Dsg mW'] = (
+                lifetime_block[25] << 8) | lifetime_block[24]
 
             # Max Temp Cell
             lifetime['Max temp cell'] = lifetime_block[26]
@@ -1479,7 +1636,7 @@ class BQ40Z50:
             # Min Temp Int Sensor
             lifetime['Min Temp Int Sensor'] = lifetime_block[30]
 
-            #Max Temp Fet
+            # Max Temp Fet
             lifetime['Max Temp Fet'] = lifetime_block[31]
 
         return lifetime
