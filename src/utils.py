@@ -54,3 +54,23 @@ DASTATUS2_CMD = array('B', b'\x72\x00')
 GAUGESTATUS1_CMD = array('B', b'\x73\x00')
 GAUGESTATUS2_CMD = array('B', b'\x74\x00')
 GAUGESTATUS3_CMD = array('B', b'\x75\x00')
+
+lifetime_1_thresholds = {'Cell 1 max mV': (2700, 4200),
+                         'Cell 2 max mV': (2700, 4200),
+                         'Cell 3 max mV': (2700, 4200),
+                         'Cell 4 max mV': (2700, 4200),
+                         'Cell 1 min mV': (2700, 4200),
+                         'Cell 2 min mV': (2700, 4200),
+                         'Cell 3 min mV': (2700, 4200),
+                         'Cell 4 min mV': (2700, 4200),
+                         'Max Delta Cell mV': (0, 250),
+                         'Max Charge mA': 4037,
+                         'Max Discharge mA': 37641,
+                         'Max Avg Dsg mA': 47230,
+                         'Max Avg Dsg mW': 41479,
+                         'Max temp cell': 46,
+                         'Min temp cell': 15,
+                         'Max delta cell temp': (0, 10),
+                         'Max Temp Int Sensor': 51,
+                         'Min Temp Int Sensor': 13,
+                         'Max Temp Fet': 61}
