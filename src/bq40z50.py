@@ -264,6 +264,10 @@ class BQ40Z50:
     def create_summary(self):
         # TODO: change file handling to csv for all below methods
         while True:
+            # Reset dicts
+            self.battery_dict = dict()
+            self.quick_report = dict()
+
             # Get existing data from battery_data.csv
             self.prepare_csv()
 
@@ -275,6 +279,23 @@ class BQ40Z50:
 
             # Print quick summary
             self.create_quick_report()
+
+            # Print some info
+            cc = self.get_cycle_count()
+            self.logger.info(f"Log: {self.get_time_ms()}, " +
+                f"Cell 1: {self.battery_dict['DAStatus1: Cell voltage 1']} mV, " +
+                f"Cell 2: {self.battery_dict['DAStatus1: Cell voltage 2']} mV, " +
+                f"Cell 3: {self.battery_dict['DAStatus1: Cell voltage 3']} mV, " +
+                f"Cell 4: {self.battery_dict['DAStatus1: Cell voltage 4']} mV, " +
+                f"T: {round(self.battery_dict.get('Temperature: Temperature', 0.0),2)}, " +
+                f"T1: {round(self.battery_dict.get('DAStatus2: TS1 temperature', 0.0),2)}, " +
+                f"T2: {round(self.battery_dict.get('DAStatus2: TS2 temperature', 0.0),2)}, " +
+                f"T3: {round(self.battery_dict.get('DAStatus2: TS3 temperature', 0.0),2)}, " +
+                f"T4: {round(self.battery_dict.get('DAStatus2: TS4 temperature', 0.0),2)}, " +
+                f"Int: {round(self.battery_dict.get('DAStatus2: Int temperature', 0.0),2)}, " +
+                f"Cell: {round(self.battery_dict.get('DAStatus2: Cell temperature', 0.0),2)}, " +
+                f"SOH: {self.battery_dict['SOH: SOH']}, " +
+                f"Cycle count: {cc.get('Cycle count')}")
 
             inp = input("Press ENTER for next battery")
 
@@ -409,7 +430,7 @@ class BQ40Z50:
                 if not data_dict[k] == 0:
                     self.quick_report[f_title] = data_dict[k]
         elif report_type == 'lifetime_1':
-            print(data_dict)
+            pass
         else:
             self.logger.warning(
                 "Quick report type {} not known,".format(report_type))
